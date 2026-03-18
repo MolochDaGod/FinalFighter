@@ -2247,7 +2247,7 @@
           );
         }));
 
-        const results = await Promise.all(promises);
+      const results = await Promise.all(promises);
         const glbCount = results.filter(Boolean).length;
 
         // If at least some loaded, we're good
@@ -2257,6 +2257,14 @@
           finishLoading();
           return;
         }
+
+        // All GLBs failed — warn with specific reason
+        if (window.location.protocol === 'file:') {
+          loadingText.textContent = 'Cannot load models from file:// — please use a local server (npx serve, or python -m http.server)';
+          console.error('GLB loading failed: file:// protocol blocks fetch(). Run a local HTTP server.');
+          return;
+        }
+        console.warn(`All ${total} character GLBs failed to load — falling back to scene.gltf`);
       }
 
       // Fallback: load monolithic scene.gltf
