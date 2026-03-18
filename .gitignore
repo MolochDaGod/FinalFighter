@@ -25,7 +25,9 @@ anims/LiuBei/*.glb
 anims/LuBu/*.glb
 anims/LuMeng/*.glb
 
-# Tools dependencies
+# Dependencies
+node_modules/
+package-lock.json
 tools/node_modules/
 
 # OS
