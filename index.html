@@ -612,24 +612,25 @@
 
     // ===== CHARACTER DATA =====
     const CHARACTERS = [
-      { id: 'Model001', name: 'Cao Pi', class: 'Swordsman', icon: 'CP', atk: 7, def: 6, spd: 8, meshPrefix: 'Model001', color: '#cc3333' },
-      { id: 'Model002', name: 'Cao Zijian', class: 'Strategist', icon: 'CZ', atk: 5, def: 7, spd: 7, meshPrefix: 'Model002', color: '#8855cc' },
-      { id: 'Model003', name: 'Dian Wei', class: 'Berserker', icon: 'DW', atk: 10, def: 8, spd: 4, meshPrefix: 'Model003', color: '#dd6633' },
-      { id: 'Model004', name: 'Diao Chan', class: 'Enchantress', icon: 'DC', atk: 6, def: 5, spd: 9, meshPrefix: 'Model004', color: '#dd55aa' },
-      { id: 'Model005', name: 'Dong Zhuo', class: 'Tyrant', icon: 'DZ', atk: 9, def: 9, spd: 3, meshPrefix: 'Model005', color: '#884422' },
-      { id: 'Model006', name: 'Guo Jia', class: 'Tactician', icon: 'GJ', atk: 6, def: 6, spd: 8, meshPrefix: 'Model006', color: '#3388cc' },
-      { id: 'Model007', name: 'Huang Gai', class: 'Vanguard', icon: 'HG', atk: 8, def: 8, spd: 5, meshPrefix: 'Model007', color: '#cc8833' },
-      { id: 'Model008', name: 'Huang Yueying', class: 'Inventor', icon: 'HY', atk: 7, def: 5, spd: 8, meshPrefix: 'Model008', color: '#44bb88' },
-      { id: 'Model009', name: 'Xu Kui', class: 'Shadow Blade', icon: 'XK', atk: 8, def: 5, spd: 9, meshPrefix: 'Model009', color: '#6644aa' },
-      { id: 'Model010', name: 'Liu Bei', class: 'Warlord', icon: 'LB', atk: 7, def: 7, spd: 7, meshPrefix: 'Model010', color: '#44aa44' },
-      { id: 'Model011', name: 'Lu Bu', class: 'God of War', icon: 'LU', atk: 10, def: 7, spd: 7, meshPrefix: 'Model011', color: '#cc2222' },
-      { id: 'Model012', name: 'Lu Meng', class: 'Blade Master', icon: 'LM', atk: 8, def: 6, spd: 7, meshPrefix: 'Model012', color: '#2266bb' },
+      { id: 'Model001', name: 'Cao Pi', class: 'Swordsman', icon: 'CP', atk: 7, def: 6, spd: 8, meshPrefix: 'Model001', glb: './characters/Model001.glb', color: '#cc3333' },
+      { id: 'Model002', name: 'Cao Zijian', class: 'Strategist', icon: 'CZ', atk: 5, def: 7, spd: 7, meshPrefix: 'Model002', glb: './characters/Model002.glb', color: '#8855cc' },
+      { id: 'Model003', name: 'Dian Wei', class: 'Berserker', icon: 'DW', atk: 10, def: 8, spd: 4, meshPrefix: 'Model003', glb: './characters/Model003.glb', color: '#dd6633' },
+      { id: 'Model004', name: 'Diao Chan', class: 'Enchantress', icon: 'DC', atk: 6, def: 5, spd: 9, meshPrefix: 'Model004', glb: './characters/Model004.glb', color: '#dd55aa' },
+      { id: 'Model005', name: 'Dong Zhuo', class: 'Tyrant', icon: 'DZ', atk: 9, def: 9, spd: 3, meshPrefix: 'Model005', glb: './characters/Model005.glb', color: '#884422' },
+      { id: 'Model006', name: 'Guo Jia', class: 'Tactician', icon: 'GJ', atk: 6, def: 6, spd: 8, meshPrefix: 'Model006', glb: './characters/Model006.glb', color: '#3388cc' },
+      { id: 'Model007', name: 'Huang Gai', class: 'Vanguard', icon: 'HG', atk: 8, def: 8, spd: 5, meshPrefix: 'Model007', glb: './characters/Model007.glb', color: '#cc8833' },
+      { id: 'Model008', name: 'Huang Yueying', class: 'Inventor', icon: 'HY', atk: 7, def: 5, spd: 8, meshPrefix: 'Model008', glb: './characters/Model008.glb', color: '#44bb88' },
+      { id: 'Model009', name: 'Xu Kui', class: 'Shadow Blade', icon: 'XK', atk: 8, def: 5, spd: 9, meshPrefix: 'Model009', glb: './characters/Model009.glb', color: '#6644aa' },
+      { id: 'Model010', name: 'Liu Bei', class: 'Warlord', icon: 'LB', atk: 7, def: 7, spd: 7, meshPrefix: 'Model010', glb: './characters/Model010.glb', color: '#44aa44' },
+      { id: 'Model011', name: 'Lu Bu', class: 'God of War', icon: 'LU', atk: 10, def: 7, spd: 7, meshPrefix: 'Model011', glb: './characters/Model011.glb', color: '#cc2222' },
+      { id: 'Model012', name: 'Lu Meng', class: 'Blade Master', icon: 'LM', atk: 8, def: 6, spd: 7, meshPrefix: 'Model012', glb: './characters/Model012.glb', color: '#2266bb' },
     ];
 
     // ===== STATE =====
     let gltfScene = null;
-    let characterGroups = {};
-    let characterBounds = {}; // stores per-character bounding dimensions
+    let characterGroups = {};       // meshPrefix fallback: collected from monolithic scene.gltf
+    let characterGLBScenes = {};    // individual GLB scenes keyed by character id
+    let characterBounds = {};       // stores per-character bounding dimensions
     let previewScene, previewCamera, previewRenderer, previewControls;
     let battleScene, battleCamera, battleRenderer;
     let selectingPlayer = 1;
@@ -1617,37 +1618,84 @@
     const loadingBar = document.getElementById('loading-bar');
     const loadingText = document.getElementById('loading-text');
 
-    loader.load('./scene.gltf',
-      (gltf) => {
-        gltfScene = gltf.scene;
-        loadingBar.style.width = '100%';
-        loadingText.textContent = 'Warriors assembled!';
-        parseCharacters();
-        setTimeout(() => {
-          document.getElementById('loading-screen').classList.add('hidden');
-          document.getElementById('title-screen').classList.add('active');
-        }, 600);
-      },
-      (progress) => {
-        if (progress.total > 0) {
-          const pct = (progress.loaded / progress.total * 100).toFixed(0);
-          loadingBar.style.width = pct + '%';
-          loadingText.textContent = `Loading warriors... ${pct}%`;
+    // Try to load individual character GLBs first (pre-split, origin-centered).
+    // Falls back to the monolithic scene.gltf if characters/ directory is unavailable.
+    async function loadAllCharacters() {
+      let loaded = 0;
+      const total = CHARACTERS.length;
+      const hasGLBs = CHARACTERS[0].glb;
+
+      if (hasGLBs) {
+        // Parallel-load individual GLBs
+        const promises = CHARACTERS.map(c => new Promise((resolve) => {
+          loader.load(c.glb,
+            (gltf) => {
+              characterGLBScenes[c.id] = gltf.scene;
+              // Also store any embedded animations
+              if (gltf.animations && gltf.animations.length > 0) {
+                characterGLBScenes[c.id]._animations = gltf.animations;
+              }
+              loaded++;
+              const pct = (loaded / total * 100).toFixed(0);
+              loadingBar.style.width = pct + '%';
+              loadingText.textContent = `Loading ${c.name}... (${loaded}/${total})`;
+              resolve(true);
+            },
+            undefined,
+            () => {
+              console.warn(`GLB not found: ${c.glb}, will fall back to scene.gltf`);
+              loaded++;
+              resolve(false);
+            }
+          );
+        }));
+
+        const results = await Promise.all(promises);
+        const glbCount = results.filter(Boolean).length;
+
+        // If at least some loaded, we're good
+        if (glbCount > 0) {
+          loadingBar.style.width = '100%';
+          loadingText.textContent = `${glbCount} warriors assembled!`;
+          finishLoading();
+          return;
         }
-      },
-      (error) => {
-        loadingText.textContent = 'Error loading scene: ' + error.message;
-        console.error(error);
       }
-    );
 
-    function parseCharacters() {
-      // Ensure world matrices are up to date so we can bake transforms
+      // Fallback: load monolithic scene.gltf
+      loadingText.textContent = 'Loading warriors...';
+      loader.load('./scene.gltf',
+        (gltf) => {
+          gltfScene = gltf.scene;
+          loadingBar.style.width = '100%';
+          loadingText.textContent = 'Warriors assembled!';
+          parseCharactersFromScene();
+          finishLoading();
+        },
+        (progress) => {
+          if (progress.total > 0) {
+            const pct = (progress.loaded / progress.total * 100).toFixed(0);
+            loadingBar.style.width = pct + '%';
+            loadingText.textContent = `Loading warriors... ${pct}%`;
+          }
+        },
+        (error) => {
+          loadingText.textContent = 'Error loading scene: ' + error.message;
+          console.error(error);
+        }
+      );
+    }
+
+    function finishLoading() {
+      setTimeout(() => {
+        document.getElementById('loading-screen').classList.add('hidden');
+        document.getElementById('title-screen').classList.add('active');
+      }, 600);
+    }
+
+    // Parse characters from monolithic scene.gltf (legacy fallback)
+    function parseCharactersFromScene() {
       gltfScene.updateMatrixWorld(true);
-
-      // Only collect actual Mesh nodes (not Groups) to avoid duplicates.
-      // The GLTF has parent groups AND child meshes both named "ModelXXX",
-      // collecting both causes doubled geometry.
       gltfScene.traverse((child) => {
         if (child.isMesh) {
           const name = child.name || '';
@@ -1661,6 +1709,9 @@
         }
       });
     }
+
+    // Kick off loading
+    loadAllCharacters();
 
     // ===== PREVIEW RENDERER =====
     function initPreviewRenderer() {
@@ -1729,6 +1780,51 @@
       }
     }
 
+    // Build a group from either individual GLB or legacy monolithic scene meshes.
+    // Returns a THREE.Group scaled to `targetHeight` with feet at Y=0.
+    function cloneCharacterModel(charId, targetHeight = 1.6) {
+      const group = new THREE.Group();
+
+      if (characterGLBScenes[charId]) {
+        // --- Individual GLB: already origin-centered, feet at Y=0 ---
+        const src = characterGLBScenes[charId];
+        src.traverse(child => {
+          if (child.isMesh) {
+            const cloned = child.clone(true);
+            cloned.geometry = child.geometry.clone();
+            group.add(cloned);
+          }
+        });
+      } else if (characterGroups[charId]?.length > 0) {
+        // --- Legacy fallback: bake world transforms from monolithic GLTF ---
+        for (const mesh of characterGroups[charId]) {
+          const cloned = mesh.clone(true);
+          cloned.geometry = mesh.geometry.clone();
+          cloned.geometry.applyMatrix4(mesh.matrixWorld);
+          cloned.position.set(0, 0, 0);
+          cloned.quaternion.identity();
+          cloned.scale.set(1, 1, 1);
+          group.add(cloned);
+        }
+      } else {
+        return group; // empty — character not loaded
+      }
+
+      // Normalize: scale to target height, center X/Z, feet at Y=0
+      const box = new THREE.Box3().setFromObject(group);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = targetHeight / maxDim;
+      group.scale.setScalar(scale);
+      group.position.set(
+        -center.x * scale,
+        -box.min.y * scale,
+        -center.z * scale
+      );
+      return group;
+    }
+
     function showCharacterInPreview(charId) {
       if (!previewScene) return;
 
@@ -1738,34 +1834,10 @@
         previewChar = null;
       }
 
-      if (!characterGroups[charId] || characterGroups[charId].length === 0) return;
+      if (!characterGLBScenes[charId] && (!characterGroups[charId] || characterGroups[charId].length === 0)) return;
 
       const char = CHARACTERS.find(c => c.id === charId);
-
-      // Clone meshes into a group, baking world transforms from the
-      // original GLTF hierarchy (display.fbx has 0.01 scale + axis swap,
-      // Sketchfab_model has rotation — these are lost on a flat clone).
-      const group = new THREE.Group();
-      for (const mesh of characterGroups[charId]) {
-        const cloned = mesh.clone(true);
-        // Bake the original world transform into the clone's local transform
-        mesh.matrixWorld.decompose(cloned.position, cloned.quaternion, cloned.scale);
-        group.add(cloned);
-      }
-
-      // Compute bounding box, center X/Z, and place feet at Y=0
-      const box = new THREE.Box3().setFromObject(group);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 1.6 / maxDim;
-      group.scale.setScalar(scale);
-      // Center horizontally, align feet (box.min.y) to ground
-      group.position.set(
-        -center.x * scale,
-        -box.min.y * scale,
-        -center.z * scale
-      );
+      const group = cloneCharacterModel(charId, 1.6);
 
       previewScene.add(group);
       previewChar = group;
@@ -1936,30 +2008,9 @@
     }
 
     function buildFighterGroup(charId) {
-      const group = new THREE.Group();
-      if (characterGroups[charId]) {
-        for (const mesh of characterGroups[charId]) {
-          const cloned = mesh.clone(true);
-          // Bake world transform so parent hierarchy transforms aren't lost
-          mesh.matrixWorld.decompose(cloned.position, cloned.quaternion, cloned.scale);
-          group.add(cloned);
-        }
-      }
-      // Compute bounds, center X/Z, feet at Y=0
-      const box = new THREE.Box3().setFromObject(group);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 1.6 / maxDim;
-      group.scale.setScalar(scale);
-      group.position.set(
-        -center.x * scale,
-        -box.min.y * scale,
-        -center.z * scale
-      );
+      const group = cloneCharacterModel(charId, 1.6);
 
       // Measure final scaled dimensions for colliders.
-      // Recompute box after positioning so it's in final world space.
       group.updateMatrixWorld(true);
       const finalBox = new THREE.Box3().setFromObject(group);
       const finalSize = finalBox.getSize(new THREE.Vector3());

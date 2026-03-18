@@ -1,0 +1,21 @@
+{
+  "name": "finalfighter_-_characters_part_01",
+  "version": "1.0.0",
+  "description": "A 3D fighting game built with **Three.js** — no build tools, no npm, just a single HTML file and GLTF character models.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MolochDaGod/FinalFighter.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/MolochDaGod/FinalFighter/issues"
+  },
+  "homepage": "https://github.com/MolochDaGod/FinalFighter#readme"
+}
