@@ -626,11 +626,44 @@
       { id: 'Model012', name: 'Lu Meng', class: 'Blade Master', icon: 'LM', atk: 8, def: 6, spd: 7, meshPrefix: 'Model012', glb: './characters/Model012.glb', color: '#2266bb' },
     ];
 
+    // ===== WEAPON DATA =====
+    // Maps each character to weapon type, mesh identifiers, grip bone, and offset
+    const WEAPON_DATA = {
+      Model001: { type: 'sword',       meshHints: ['caopi-R-weapon'],                       gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model001_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model002: { type: 'staff',        meshHints: [],                                       gripBone: 'mixamorigRightHand', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model003: { type: 'axe',          meshHints: ['DW-weapon'],                            gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model003_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model004: { type: 'fan',          meshHints: ['DC-weapon'],                            gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model004_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model005: { type: 'mace',         meshHints: ['dongzhuo-weapon'],                      gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model005_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model006: { type: 'staff',        meshHints: [],                                       gripBone: 'mixamorigRightHand', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model007: { type: 'unarmed',      meshHints: [],                                       gripBone: null, weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model008: { type: 'crossbow',     meshHints: ['yingwu-wing'],                          gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model008_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model009: { type: 'dual_blade',   meshHints: [],                                       gripBone: 'mixamorigRightHand', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model010: { type: 'dual_sword',   meshHints: ['liubei-m-weapon', 'liubei-weapon'],     gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model010_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model011: { type: 'spear',        meshHints: [],                                       gripBone: 'mixamorigRightHand', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model012: { type: 'sword',        meshHints: ['LM-sword'],                             gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model012_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+    };
+
+    // ===== WEAPON ATTACK MAPPING =====
+    // Maps generic attack states to weapon-specific animation clip names
+    const WEAPON_ATTACK_MAP = {
+      sword:      { punch: 'slash_1', kick: 'thrust', special: 'special_whirlwind', combo_punch: 'slash_combo' },
+      dual_sword: { punch: 'dual_slash_1', kick: 'dual_slash_2', special: 'special_storm', combo_punch: 'dual_cross_slash' },
+      dual_blade: { punch: 'dual_slash_1', kick: 'dual_slash_2', special: 'special_storm', combo_punch: 'dual_cross_slash' },
+      axe:        { punch: 'swing_1', kick: 'swing_2', special: 'special_ground_pound', combo_punch: 'overhead_smash' },
+      fan:        { punch: 'fan_swipe_1', kick: 'fan_swipe_2', special: 'special_dance', combo_punch: 'fan_throw' },
+      mace:       { punch: 'smash_1', kick: 'smash_2', special: 'special_slam', combo_punch: 'uppercut' },
+      spear:      { punch: 'thrust_1', kick: 'thrust_2', special: 'special_charge', combo_punch: 'sweep' },
+      crossbow:   { punch: 'bash_1', kick: 'kick_1', special: 'special_volley', combo_punch: 'bash_combo' },
+      staff:      { punch: 'staff_strike_1', kick: 'staff_sweep', special: 'special_spell', combo_punch: 'staff_combo' },
+      unarmed:    { punch: 'punch_1', kick: 'kick_1', special: 'special_combo', combo_punch: 'punch_2' },
+    };
+
     // ===== STATE =====
     let gltfScene = null;
     let characterGroups = {};       // meshPrefix fallback: collected from monolithic scene.gltf
     let characterGLBScenes = {};    // individual GLB scenes keyed by character id
     let characterBounds = {};       // stores per-character bounding dimensions
+    let weaponMeshes = {};          // loaded weapon GLBs keyed by character id
     let previewScene, previewCamera, previewRenderer, previewControls;
     let battleScene, battleCamera, battleRenderer;
     let selectingPlayer = 1;
@@ -644,7 +677,8 @@
     let debugHelpers = [];
     let vfxParticles = [];
     let screenShake = 0;
-    const CAM_BASE = new THREE.Vector3(0, 2, 6);
+    const CAM_BASE = new THREE.Vector3(0, 1.8, 5.5);  // 2.5D side-view base
+    const CAM_LOOKAT_BASE = new THREE.Vector3(0, 0.9, 0);
 
     // ===== GAMEPAD / CONTROLLER SYSTEM =====
     const GP_BUTTON_NAMES = [
@@ -934,14 +968,23 @@
       IDLE: 'idle',
       WALK_FWD: 'walk_fwd',
       WALK_BACK: 'walk_back',
+      RUN_FWD: 'run_fwd',
+      RUN_BACK: 'run_back',
       PUNCH: 'punch',
       KICK: 'kick',
       SPECIAL: 'special',
       BLOCK: 'block',
+      DODGE: 'dodge',
+      JUMP: 'jump',
+      CROUCH: 'crouch',
+      STUN: 'stun',
       HIT_REACT: 'hit_react',
       KNOCKDOWN: 'knockdown',
+      GETUP: 'getup',
       KO: 'ko',
       VICTORY: 'victory',
+      INTRO: 'intro',
+      TAUNT: 'taunt',
     });
 
     const ATTACK_FRAME_DATA = Object.freeze({
@@ -977,36 +1020,66 @@
     const STATE_RECOVERY_MS = Object.freeze({
       hit_react: 260,
       knockdown: 900,
+      stun: 500,
+      dodge: 350,
+      getup: 400,
+    });
+
+    // Per-state crossfade durations (seconds) for animation blending
+    const STATE_CROSSFADE = Object.freeze({
+      idle: 0.2, walk_fwd: 0.2, walk_back: 0.2, run_fwd: 0.15, run_back: 0.15,
+      punch: 0.06, kick: 0.06, special: 0.08,
+      block: 0.1, dodge: 0.06, jump: 0.08, crouch: 0.12,
+      hit_react: 0.04, knockdown: 0.04, getup: 0.15, stun: 0.06,
+      ko: 0.04, victory: 0.2, intro: 0.15, taunt: 0.2,
     });
 
     const LOOPING_ANIMATION_STATES = new Set([
       FIGHTER_STATES.IDLE,
       FIGHTER_STATES.WALK_FWD,
       FIGHTER_STATES.WALK_BACK,
+      FIGHTER_STATES.RUN_FWD,
+      FIGHTER_STATES.RUN_BACK,
       FIGHTER_STATES.BLOCK,
+      FIGHTER_STATES.CROUCH,
+      FIGHTER_STATES.STUN,
     ]);
 
     const MIXAMO_STATE_ALIASES = Object.freeze({
-      idle: ['idle'],
+      idle: ['idle', 'breathing_idle', 'idle_combat', 'fighting_idle'],
       walk_fwd: ['walk_fwd', 'walk_forward', 'walk', 'walking'],
-      walk_back: ['walk_back', 'walk_backward', 'backpedal', 'walk_backward_loop'],
-      punch: ['punch', 'jab', 'attack_1', 'attack'],
-      kick: ['kick', 'roundhouse', 'attack_2'],
-      special: ['special', 'ability', 'attack_special', 'slash', 'spellcast'],
-      block: ['block', 'blocking', 'guard'],
-      hit_react: ['hit_react', 'hit', 'pain', 'react'],
+      walk_back: ['walk_back', 'walk_backward', 'backpedal'],
+      run_fwd: ['run_fwd', 'run', 'running', 'jog'],
+      run_back: ['run_back', 'run_backward'],
+      punch: ['punch', 'jab', 'attack_1', 'attack', 'slash_1', 'swing_1', 'thrust_1', 'smash_1', 'punch_1', 'fan_swipe_1', 'bash_1', 'staff_strike_1'],
+      kick: ['kick', 'roundhouse', 'attack_2', 'slash_2', 'swing_2', 'thrust_2', 'smash_2', 'kick_1', 'fan_swipe_2', 'staff_sweep'],
+      special: ['special', 'ability', 'attack_special', 'slash_combo', 'special_whirlwind', 'special_storm', 'special_ground_pound', 'special_dance', 'special_slam', 'special_charge', 'special_volley', 'special_spell', 'special_combo'],
+      block: ['block', 'blocking', 'guard', 'block_high'],
+      dodge: ['dodge', 'dodge_back', 'dodge_left', 'dodge_right', 'evade', 'roll'],
+      jump: ['jump', 'jumping'],
+      crouch: ['crouch', 'crouching', 'duck'],
+      stun: ['stun', 'stunned', 'dazed'],
+      hit_react: ['hit_react', 'hit', 'pain', 'react', 'hit_react_high', 'hit_react_mid'],
       knockdown: ['knockdown', 'fall', 'down', 'knocked_down'],
+      getup: ['getup', 'get_up', 'stand_up', 'recover'],
       ko: ['ko', 'death', 'dead', 'defeat'],
-      victory: ['victory', 'win', 'celebrate', 'taunt'],
+      victory: ['victory', 'win', 'celebrate'],
+      intro: ['intro', 'entrance', 'ready'],
+      taunt: ['taunt', 'provoke', 'flex'],
     });
 
-    // Populate this with your exported Mixamo clip files when ready.
-    // Example:
-    // shared: { idle: './animations/shared/idle.glb' }
-    // perCharacter: { Model001: { special: './animations/Model001/special.glb' } }
+    // ===== ANIMATION MANIFEST =====
+    // Layered resolution: shared → weapon type → per-character (most specific wins)
     const MIXAMO_CLIP_MANIFEST = {
-      shared: {},
-      perCharacter: {},
+      shared: {
+        // Populate with: idle: './anims/shared/idle.glb', etc.
+      },
+      weaponType: {
+        // sword: { punch: './anims/weapon_sword/slash_1.glb', ... },
+      },
+      perCharacter: {
+        // Model001: { special: './anims/CaoPi/special.glb' },
+      },
     };
 
     const mixamoClipLoader = new GLTFLoader();
@@ -1037,8 +1110,10 @@
     }
 
     function getManifestForCharacter(charId) {
+      const weaponType = WEAPON_DATA[charId]?.type || 'unarmed';
       return {
         ...(MIXAMO_CLIP_MANIFEST.shared || {}),
+        ...((MIXAMO_CLIP_MANIFEST.weaponType || {})[weaponType] || {}),
         ...((MIXAMO_CLIP_MANIFEST.perCharacter || {})[charId] || {}),
       };
     }
@@ -1086,7 +1161,7 @@
       }
     }
 
-    function playFighterAnimation(fighter, state, fade = 0.12) {
+    function playFighterAnimation(fighter, state, fadeOverride) {
       if (!fighter?.animation) return;
       const { actions, stateToClip } = fighter.animation;
       const clipKey = stateToClip[state] || stateToClip[FIGHTER_STATES.IDLE];
@@ -1095,6 +1170,9 @@
       const next = actions[clipKey];
       const prev = fighter.animation.currentAction;
       if (prev === next && fighter.animation.currentState === state) return;
+
+      // Use per-state crossfade or override
+      const fade = fadeOverride !== undefined ? fadeOverride : (STATE_CROSSFADE[state] || 0.12);
 
       next.enabled = true;
       next.reset();
@@ -1600,17 +1678,37 @@
       screenShake = Math.max(screenShake, intensity);
     }
 
-    function applyScreenShake(dt) {
-      if (!battleCamera) return;
+    function updateBattleCamera(dt) {
+      if (!battleCamera || !gameState) return;
+
+      // Track midpoint between fighters on X axis
+      const midX = (gameState.p1.x + gameState.p2.x) / 2;
+      const dist = Math.abs(gameState.p1.x - gameState.p2.x);
+
+      // Subtle zoom: pull back when fighters are far apart, push in when close
+      const zoomBase = 5.5;
+      const zoomRange = 1.5;
+      const zoomT = Math.max(0, Math.min(1, (dist - 1.0) / 5.0));
+      const targetZ = zoomBase + zoomT * zoomRange;
+
+      // Smooth camera follow (lerp)
+      const lerpSpeed = 1 - Math.pow(0.05, dt / 1000);
+      CAM_BASE.x += (midX * 0.6 - CAM_BASE.x) * lerpSpeed;  // only follow 60% of midpoint for cinematic feel
+      CAM_BASE.z += (targetZ - CAM_BASE.z) * lerpSpeed * 0.5;
+      CAM_LOOKAT_BASE.x += (midX * 0.7 - CAM_LOOKAT_BASE.x) * lerpSpeed;
+
+      // Apply screen shake on top of tracked position
+      let ox = 0, oy = 0;
       if (screenShake > 0.001) {
-        const ox = (Math.random() - 0.5) * screenShake * 0.4;
-        const oy = (Math.random() - 0.5) * screenShake * 0.3;
-        battleCamera.position.set(CAM_BASE.x + ox, CAM_BASE.y + oy, CAM_BASE.z);
-        screenShake *= Math.pow(0.92, dt / 16); // exponential decay
+        ox = (Math.random() - 0.5) * screenShake * 0.4;
+        oy = (Math.random() - 0.5) * screenShake * 0.3;
+        screenShake *= Math.pow(0.92, dt / 16);
       } else {
         screenShake = 0;
-        battleCamera.position.copy(CAM_BASE);
       }
+
+      battleCamera.position.set(CAM_BASE.x + ox, CAM_BASE.y + oy, CAM_BASE.z);
+      battleCamera.lookAt(CAM_LOOKAT_BASE.x, CAM_LOOKAT_BASE.y, CAM_LOOKAT_BASE.z);
     }
 
     // ===== LOADING =====
@@ -1732,10 +1830,8 @@
       previewControls = new OrbitControls(previewCamera, canvas);
       previewControls.target.set(0, 0.7, 0);
       previewControls.enablePan = false;
-      previewControls.minDistance = 1;
-      previewControls.maxDistance = 5;
-      previewControls.autoRotate = true;
-      previewControls.autoRotateSpeed = 2;
+      previewControls.enableRotate = false;
+      previewControls.enableZoom = false;
       previewControls.update();
 
       // Lighting
@@ -1772,8 +1868,123 @@
       animatePreview();
     }
 
-    function animatePreview() {
+    // ===== PREVIEW ANIMATION SEQUENCE =====
+    // Plays a short attack combo then settles into idle facing the camera.
+    // Timeline: punch → kick → special → idle
+    let previewAnimTime = 0;
+    let previewLastFrame = 0;
+    const PREVIEW_SEQUENCE = [
+      // { state, duration (ms) }
+      { state: 'idle',    dur: 400 },
+      { state: 'punch',   dur: 350 },
+      { state: 'idle',    dur: 200 },
+      { state: 'kick',    dur: 400 },
+      { state: 'idle',    dur: 200 },
+      { state: 'special', dur: 500 },
+      { state: 'idle',    dur: 250 },
+      { state: 'punch',   dur: 350 },
+      { state: 'kick',    dur: 400 },
+      { state: 'idle',    dur: -1 },  // -1 = hold forever
+    ];
+
+    function getPreviewState() {
+      let elapsed = 0;
+      for (const step of PREVIEW_SEQUENCE) {
+        if (step.dur < 0) return { state: step.state, t: previewAnimTime - elapsed };
+        if (previewAnimTime < elapsed + step.dur) {
+          return { state: step.state, t: previewAnimTime - elapsed };
+        }
+        elapsed += step.dur;
+      }
+      // Shouldn't reach here, but fallback to idle
+      return { state: 'idle', t: 0 };
+    }
+
+    function applyPreviewAnimation(group, state, t) {
+      if (!group) return;
+      // Reset transforms
+      group.rotation.x = 0;
+      group.rotation.z = 0;
+      const baseY = group.userData.baseY || 0;
+      group.position.y = baseY;
+
+      const now = Date.now();
+      switch (state) {
+        case 'idle': {
+          group.position.y = baseY + Math.sin(now * 0.003) * 0.015;
+          break;
+        }
+        case 'punch': {
+          const dur = 350;
+          const p = Math.min(1, t / dur);
+          if (p < 0.3) {
+            const w = p / 0.3;
+            group.rotation.x = w * 0.08;
+            group.position.y = baseY - w * 0.02;
+          } else if (p < 0.6) {
+            const a = (p - 0.3) / 0.3;
+            group.rotation.x = -0.15 * (1 - a * 0.5);
+            group.position.y = baseY + 0.03;
+          } else {
+            const r = (p - 0.6) / 0.4;
+            group.rotation.x = -0.15 * (1 - r);
+            group.position.y = baseY + 0.03 * (1 - r);
+          }
+          break;
+        }
+        case 'kick': {
+          const dur = 400;
+          const p = Math.min(1, t / dur);
+          if (p < 0.25) {
+            const w = p / 0.25;
+            group.rotation.x = w * 0.06;
+            group.position.y = baseY + w * 0.04;
+          } else if (p < 0.55) {
+            const a = (p - 0.25) / 0.3;
+            group.rotation.x = -0.12;
+            group.rotation.z = -0.08 * a;
+            group.position.y = baseY + 0.06;
+          } else {
+            const r = (p - 0.55) / 0.45;
+            group.rotation.x = -0.12 * (1 - r);
+            group.rotation.z = -0.08 * (1 - r);
+            group.position.y = baseY + 0.06 * (1 - r);
+          }
+          break;
+        }
+        case 'special': {
+          const dur = 500;
+          const p = Math.min(1, t / dur);
+          if (p < 0.3) {
+            const w = p / 0.3;
+            group.rotation.x = w * 0.1;
+            group.position.y = baseY + w * 0.05;
+            group.rotation.z = Math.sin(w * Math.PI * 2) * 0.04;
+          } else if (p < 0.6) {
+            group.rotation.x = -0.2;
+            group.position.y = baseY + 0.08;
+            group.rotation.z = Math.sin(t * 0.02) * 0.06;
+          } else {
+            const r = (p - 0.6) / 0.4;
+            group.rotation.x = -0.2 * (1 - r);
+            group.position.y = baseY + 0.08 * (1 - r);
+          }
+          break;
+        }
+      }
+    }
+
+    function animatePreview(timestamp) {
       animFrame = requestAnimationFrame(animatePreview);
+      const dt = previewLastFrame ? Math.min(timestamp - previewLastFrame, 50) : 16;
+      previewLastFrame = timestamp;
+      previewAnimTime += dt;
+
+      if (previewChar) {
+        const { state, t } = getPreviewState();
+        applyPreviewAnimation(previewChar, state, t);
+      }
+
       if (previewControls) previewControls.update();
       if (previewRenderer && previewScene && previewCamera) {
         previewRenderer.render(previewScene, previewCamera);
@@ -1839,8 +2050,16 @@
       const char = CHARACTERS.find(c => c.id === charId);
       const group = cloneCharacterModel(charId, 1.6);
 
+      // Face the camera (looking toward +Z)
+      group.rotation.y = 0;
+      group.userData.baseY = group.position.y;
+
       previewScene.add(group);
       previewChar = group;
+
+      // Reset animation timeline for each new character
+      previewAnimTime = 0;
+      previewLastFrame = 0;
 
       document.getElementById('preview-name').textContent = char.name;
       document.getElementById('preview-class').textContent = char.class.toUpperCase();
@@ -1888,86 +2107,194 @@
       }
     }
 
+    // ===== WEAPON LOADING =====
+    // Attach loaded weapon mesh to a fighter's hand bone at runtime
+    function attachWeaponToFighter(fighter) {
+      const wd = WEAPON_DATA[fighter.char.id];
+      if (!wd || !wd.gripBone || !wd.weapon_glb) return;
+
+      // Find hand bone in the rigged model
+      let handBone = null;
+      fighter.group.traverse(child => {
+        if (child.isBone && child.name === wd.gripBone) handBone = child;
+      });
+
+      if (!handBone) return; // not rigged yet — weapon stays in static mesh
+
+      const weaponScene = weaponMeshes[fighter.char.id];
+      if (!weaponScene) return;
+
+      const weaponGroup = new THREE.Group();
+      weaponScene.traverse(child => {
+        if (child.isMesh) weaponGroup.add(child.clone(true));
+      });
+      weaponGroup.position.set(wd.offset.x, wd.offset.y, wd.offset.z);
+      weaponGroup.rotation.set(wd.rotation.x, wd.rotation.y, wd.rotation.z);
+      handBone.add(weaponGroup);
+      fighter.weaponGroup = weaponGroup;
+    }
+
     // ===== BATTLE SYSTEM =====
     function initBattle() {
       const canvas = document.getElementById('battle-canvas');
       battleRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-      battleRenderer.setPixelRatio(window.devicePixelRatio);
+      battleRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       battleRenderer.setSize(window.innerWidth, window.innerHeight);
       battleRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-      battleRenderer.toneMappingExposure = 1.0;
+      battleRenderer.toneMappingExposure = 1.2;
+      battleRenderer.shadowMap.enabled = true;
+      battleRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      battleRenderer.outputColorSpace = THREE.SRGBColorSpace;
 
       battleScene = new THREE.Scene();
-      battleScene.background = new THREE.Color(0x0a0d15);
-      battleScene.fog = new THREE.FogExp2(0x0a0d15, 0.15);
+      battleScene.background = new THREE.Color(0x080b14);
+      battleScene.fog = new THREE.Fog(0x080b14, 8, 25);
 
-      battleCamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-      battleCamera.position.set(0, 2, 6);
-      battleCamera.lookAt(0, 0.8, 0);
+      // ===== 2.5D CAMERA =====
+      // Side-view with slight angle — MK/Virtua Fighter style
+      battleCamera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+      battleCamera.position.copy(CAM_BASE);
+      battleCamera.lookAt(CAM_LOOKAT_BASE);
 
-      // Lighting
-      const ambient = new THREE.AmbientLight(0xffffff, 0.3);
-      battleScene.add(ambient);
+      // ===== NATURAL LIGHTING =====
+      // Warm ambient for atmosphere
+      const hemiLight = new THREE.HemisphereLight(0x8899bb, 0x2a1f0f, 0.6);
+      battleScene.add(hemiLight);
 
-      const spotP1 = new THREE.SpotLight(0xeeb72b, 3, 10, Math.PI / 6);
-      spotP1.position.set(-3, 5, 2);
+      // Main key light — warm directional with shadows
+      const keyLight = new THREE.DirectionalLight(0xffeedd, 1.8);
+      keyLight.position.set(2, 6, 4);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.set(1024, 1024);
+      keyLight.shadow.camera.left = -5;
+      keyLight.shadow.camera.right = 5;
+      keyLight.shadow.camera.top = 4;
+      keyLight.shadow.camera.bottom = -1;
+      keyLight.shadow.camera.near = 0.5;
+      keyLight.shadow.camera.far = 15;
+      keyLight.shadow.bias = -0.001;
+      keyLight.shadow.radius = 3;
+      battleScene.add(keyLight);
+
+      // Cool fill from opposite side
+      const fillLight = new THREE.DirectionalLight(0x6688cc, 0.5);
+      fillLight.position.set(-3, 4, 2);
+      battleScene.add(fillLight);
+
+      // Warm rim/back light for character edge definition
+      const rimLight = new THREE.DirectionalLight(0xeeb72b, 0.4);
+      rimLight.position.set(0, 3, -5);
+      battleScene.add(rimLight);
+
+      // Subtle colored fighter spotlights (toned down for natural feel)
+      const spotP1 = new THREE.SpotLight(0xeeb72b, 1.5, 8, Math.PI / 5, 0.5);
+      spotP1.position.set(-2, 4, 3);
       spotP1.target.position.set(-1.5, 0, 0);
       battleScene.add(spotP1);
       battleScene.add(spotP1.target);
 
-      const spotP2 = new THREE.SpotLight(0x3080ff, 3, 10, Math.PI / 6);
-      spotP2.position.set(3, 5, 2);
+      const spotP2 = new THREE.SpotLight(0x3080ff, 1.5, 8, Math.PI / 5, 0.5);
+      spotP2.position.set(2, 4, 3);
       spotP2.target.position.set(1.5, 0, 0);
       battleScene.add(spotP2);
       battleScene.add(spotP2.target);
 
-      const backLight = new THREE.DirectionalLight(0x6644aa, 0.4);
-      backLight.position.set(0, 3, -5);
-      battleScene.add(backLight);
-
-      // Arena floor
-      const floorGeo = new THREE.PlaneGeometry(12, 8, 20, 20);
+      // ===== ENHANCED STAGE =====
+      // Stone arena floor with slight elevation
+      const floorGeo = new THREE.CylinderGeometry(5.5, 5.8, 0.15, 64);
       const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x161a27, metalness: 0.5, roughness: 0.6
+        color: 0x2a2535, metalness: 0.3, roughness: 0.8,
       });
       const floor = new THREE.Mesh(floorGeo, floorMat);
-      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = -0.075;
+      floor.receiveShadow = true;
       battleScene.add(floor);
 
-      // Arena border ring
-      const arenaRing = new THREE.RingGeometry(4.5, 4.7, 64);
-      const arenaMat = new THREE.MeshBasicMaterial({ color: 0x7a601f, side: THREE.DoubleSide });
-      const ring = new THREE.Mesh(arenaRing, arenaMat);
-      ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.005;
-      battleScene.add(ring);
+      // Fight surface (top of platform)
+      const surfaceGeo = new THREE.CircleGeometry(5.5, 64);
+      const surfaceMat = new THREE.MeshStandardMaterial({
+        color: 0x1e1a28, metalness: 0.4, roughness: 0.7,
+      });
+      const surface = new THREE.Mesh(surfaceGeo, surfaceMat);
+      surface.rotation.x = -Math.PI / 2;
+      surface.position.y = 0.001;
+      surface.receiveShadow = true;
+      battleScene.add(surface);
 
-      // Inner arena circle
-      const innerRing = new THREE.RingGeometry(2.8, 2.85, 64);
-      const innerMat = new THREE.MeshBasicMaterial({ color: 0x3a2f10, side: THREE.DoubleSide });
+      // Gold outer border ring
+      const outerRing = new THREE.RingGeometry(5.3, 5.5, 64);
+      const outerMat = new THREE.MeshStandardMaterial({
+        color: 0x8a701f, metalness: 0.7, roughness: 0.3,
+        emissive: 0x4a3a0a, emissiveIntensity: 0.3,
+      });
+      const outer = new THREE.Mesh(outerRing, outerMat);
+      outer.rotation.x = -Math.PI / 2;
+      outer.position.y = 0.005;
+      battleScene.add(outer);
+
+      // Inner fight circle
+      const innerRing = new THREE.RingGeometry(3.3, 3.4, 64);
+      const innerMat = new THREE.MeshStandardMaterial({
+        color: 0x3a2f10, metalness: 0.5, roughness: 0.5,
+        emissive: 0x1a1508, emissiveIntensity: 0.2,
+      });
       const inner = new THREE.Mesh(innerRing, innerMat);
       inner.rotation.x = -Math.PI / 2;
       inner.position.y = 0.003;
       battleScene.add(inner);
 
-      // Background pillars
-      for (let i = 0; i < 8; i++) {
-        const angle = (i / 8) * Math.PI * 2;
-        const pillarGeo = new THREE.CylinderGeometry(0.15, 0.2, 4, 8);
+      // Center mark — cross pattern
+      const centerGeo = new THREE.PlaneGeometry(0.06, 0.8);
+      const centerMat = new THREE.MeshBasicMaterial({ color: 0x5a4a1a });
+      for (let r = 0; r < 2; r++) {
+        const mark = new THREE.Mesh(centerGeo, centerMat);
+        mark.rotation.x = -Math.PI / 2;
+        mark.rotation.z = r * Math.PI / 2;
+        mark.position.y = 0.004;
+        battleScene.add(mark);
+      }
+
+      // Background pillars — stone columns with torch-like glow
+      for (let i = 0; i < 10; i++) {
+        const angle = (i / 10) * Math.PI * 2;
+        const radius = 7;
+        const pillarGeo = new THREE.CylinderGeometry(0.2, 0.25, 5, 8);
         const pillarMat = new THREE.MeshStandardMaterial({
-          color: 0x1d2130, metalness: 0.6, roughness: 0.4
+          color: 0x1d1a28, metalness: 0.5, roughness: 0.5,
         });
         const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-        pillar.position.set(Math.cos(angle) * 5.5, 2, Math.sin(angle) * 4);
+        pillar.position.set(Math.cos(angle) * radius, 2.5, Math.sin(angle) * radius);
+        pillar.castShadow = true;
         battleScene.add(pillar);
 
         // Gold cap
-        const capGeo = new THREE.CylinderGeometry(0.22, 0.15, 0.15, 8);
-        const capMat = new THREE.MeshStandardMaterial({ color: 0xeeb72b, metalness: 0.7, roughness: 0.3 });
+        const capGeo = new THREE.CylinderGeometry(0.28, 0.2, 0.2, 8);
+        const capMat = new THREE.MeshStandardMaterial({
+          color: 0xeeb72b, metalness: 0.7, roughness: 0.3,
+          emissive: 0x553300, emissiveIntensity: 0.3,
+        });
         const cap = new THREE.Mesh(capGeo, capMat);
-        cap.position.set(Math.cos(angle) * 5.5, 4.07, Math.sin(angle) * 4);
+        cap.position.set(Math.cos(angle) * radius, 5.1, Math.sin(angle) * radius);
         battleScene.add(cap);
+
+        // Torch point light (warm, small radius)
+        if (i % 2 === 0) {
+          const torch = new THREE.PointLight(0xff8833, 0.6, 5, 2);
+          torch.position.set(Math.cos(angle) * radius, 5.3, Math.sin(angle) * radius);
+          battleScene.add(torch);
+        }
       }
+
+      // Background ground plane extending into darkness
+      const bgFloorGeo = new THREE.PlaneGeometry(40, 40);
+      const bgFloorMat = new THREE.MeshStandardMaterial({
+        color: 0x0a0812, metalness: 0.2, roughness: 0.9,
+      });
+      const bgFloor = new THREE.Mesh(bgFloorGeo, bgFloorMat);
+      bgFloor.rotation.x = -Math.PI / 2;
+      bgFloor.position.y = -0.15;
+      bgFloor.receiveShadow = true;
+      battleScene.add(bgFloor);
 
       // Place fighters
       const p1Char = CHARACTERS.find(c => c.id === selectedP1);
@@ -2002,9 +2329,23 @@
 
       updateHealthBars();
 
+      // Enable shadow casting on fighter meshes
+      [p1Group, p2Group].forEach(g => {
+        g.traverse(child => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+      });
+
       // Initialize combat state machine + animation controller for both fighters
       initializeFighterAnimationController(gameState.p1);
       initializeFighterAnimationController(gameState.p2);
+
+      // Attempt weapon attachment (only works if models are rigged with bones)
+      attachWeaponToFighter(gameState.p1);
+      attachWeaponToFighter(gameState.p2);
     }
 
     function buildFighterGroup(charId) {
@@ -2358,7 +2699,7 @@
         if (gameState.p1.animation?.mixer) gameState.p1.animation.mixer.update(dt / 1000);
         if (gameState.p2.animation?.mixer) gameState.p2.animation.mixer.update(dt / 1000);
         updateVFX(dt);
-        applyScreenShake(dt);
+        updateBattleCamera(dt);
 
         // Debug state overlay
         if (debugColliders) {

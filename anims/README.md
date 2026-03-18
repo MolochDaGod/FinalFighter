@@ -1,109 +1,67 @@
 # Mixamo Animation Pipeline — Final Fighter
 
-## Directory Structure
+## Full Rigging & Animation Workflow
 
-```
-anims/
-├── shared/          ← Animations that work for ALL characters (same skeleton)
-│   ├── idle.glb
-│   ├── walk_fwd.glb
-│   ├── walk_back.glb
-│   ├── punch.glb
-│   ├── kick.glb
-│   ├── special.glb
-│   ├── block.glb
-│   ├── hit_react.glb
-│   ├── knockdown.glb
-│   ├── ko.glb
-│   └── victory.glb
-├── CaoPi/           ← Character-specific overrides (optional)
-│   └── special.glb  ← Overrides shared/special.glb for this character
-├── CaoZijian/
-├── DianWei/
-├── ...
-└── LuMeng/
-```
-
-## Step-by-Step Workflow
-
-### 1. Export Characters for Mixamo
-
-Run the Blender batch export script:
-
+### Step 1: Export Characters (body + weapon separated)
 ```bash
 blender --background --python tools/export_for_mixamo.py
 ```
+Produces body FBX (for Mixamo) + weapon GLB (for runtime attachment).
 
-This produces 12 FBX files in `tools/mixamo_exports/`.
+### Step 2: Upload body FBX to mixamo.com → auto-rig
+Place skeleton markers (chin, wrists, elbows, knees, groin).
 
-### 2. Upload to Mixamo
+### Step 3: Download rigged T-pose as FBX ("With Skin")
+Save to `tools/mixamo_rigged/<Name>_rigged.fbx`.
 
-1. Go to [mixamo.com](https://www.mixamo.com) and sign in
-2. Click **Upload Character** → select one FBX file (e.g. `CaoPi.fbx`)
-3. Place the auto-rig markers (chin, wrists, elbows, knees, groin)
-4. Click **Next** → Mixamo auto-rigs the character
+### Step 4: Download animations as GLB ("Without Skin", 30fps, no keyframe reduction)
 
-### 3. Download Animations
+**Shared (all characters):** idle, idle_combat, walk_fwd, walk_back, run_fwd, run_back, block_high, dodge_back, dodge_left, dodge_right, jump, land, crouch, hit_react_high, hit_react_mid, hit_react_low, knockdown, getup, stun, ko, victory, intro, taunt
 
-For each animation needed, search Mixamo's library and download:
+**Sword:** slash_1, slash_2, slash_combo, thrust, overhead, special_whirlwind
+**Dual Sword:** dual_slash_1, dual_slash_2, dual_cross_slash, special_storm
+**Axe:** swing_1, swing_2, overhead_smash, special_ground_pound
+**Fan:** fan_swipe_1, fan_swipe_2, fan_throw, special_dance
+**Mace:** smash_1, smash_2, uppercut, special_slam
+**Spear:** thrust_1, thrust_2, sweep, special_charge
+**Unarmed:** punch_1, punch_2, kick_1, kick_2, special_combo
 
-| State       | Suggested Mixamo Search     | Format  |
-|-------------|----------------------------|---------|
-| idle        | "Idle" or "Breathing Idle"  | GLB     |
-| walk_fwd    | "Walking"                   | GLB     |
-| walk_back   | "Walking Backward"          | GLB     |
-| punch       | "Jab" or "Cross Punch"      | GLB     |
-| kick        | "Roundhouse Kick"           | GLB     |
-| special     | "Sword Slash" or "Spell"    | GLB     |
-| block       | "Blocking"                  | GLB     |
-| hit_react   | "Hit Reaction"              | GLB     |
-| knockdown   | "Falling Down"              | GLB     |
-| ko          | "Death"                     | GLB     |
-| victory     | "Victory" or "Celebrate"    | GLB     |
-
-**Download settings:**
-- Format: **GLB** (for web, works directly with Three.js GLTFLoader)
-- Skin: **Without Skin** for shared anims (animation data only, smaller files)
-- Skin: **With Skin** if you want per-character rigged models
-- Frames per second: **30**
-- Keyframe reduction: **none** (for best quality)
-
-### 4. Place Files
-
-- Shared animations → `anims/shared/idle.glb`, `anims/shared/punch.glb`, etc.
-- Character-specific overrides → `anims/CaoPi/special.glb`, etc.
-
-### 5. Update the Manifest
-
-In `index.html`, find `MIXAMO_CLIP_MANIFEST` and update:
-
-```js
-const MIXAMO_CLIP_MANIFEST = {
-  shared: {
-    idle: './anims/shared/idle.glb',
-    walk_fwd: './anims/shared/walk_fwd.glb',
-    walk_back: './anims/shared/walk_back.glb',
-    punch: './anims/shared/punch.glb',
-    kick: './anims/shared/kick.glb',
-    special: './anims/shared/special.glb',
-    block: './anims/shared/block.glb',
-    hit_react: './anims/shared/hit_react.glb',
-    knockdown: './anims/shared/knockdown.glb',
-    ko: './anims/shared/ko.glb',
-    victory: './anims/shared/victory.glb',
-  },
-  perCharacter: {
-    Model001: { special: './anims/CaoPi/special.glb' },
-    // ... add per-character overrides as needed
-  },
-};
+### Step 5: Attach weapons and export final rigged GLBs
+```bash
+blender --background --python tools/attach_weapons.py
 ```
 
-The animation system auto-loads, maps clip names to combat states, and cross-fades between them. When clips are present, procedural fallback animations are automatically disabled.
+### Step 6: Place files
+- `anims/shared/*.glb` — standard animations
+- `anims/weapon_<type>/*.glb` — weapon-specific combat
+- `anims/<CharName>/*.glb` — character overrides
 
-## Troubleshooting
+### Step 7: Update `MIXAMO_CLIP_MANIFEST` in index.html
 
-- **Model too small in Mixamo:** Re-run export with different scale in Blender
-- **Mixamo can't auto-rig:** Model may have too many disconnected parts — check the FBX in Blender first
-- **Animation plays wrong:** Check clip name mapping in `MIXAMO_STATE_ALIASES`
-- **Animation doesn't blend:** Ensure all clips share the same skeleton hierarchy
+## Mixamo Search Terms
+
+| Clip | Search Term |
+|------|------------|
+| idle | "Breathing Idle" / "Fighting Idle" |
+| walk_fwd | "Walking" |
+| walk_back | "Walking Backward" |
+| run_fwd | "Running" / "Jogging" |
+| block_high | "Blocking" |
+| dodge_back | "Dodge" / "Quick Step" |
+| hit_react | "Head Hit" / "Hit Reaction" |
+| knockdown | "Getting Knocked Down" |
+| getup | "Getting Up" / "Kip Up" |
+| stun | "Stunned" / "Dizzy" |
+| ko | "Death From Front" |
+| victory | "Victory" / "Celebrate" |
+| slash_1 | "Sword Slash" |
+| slash_combo | "Sword Combo" |
+| swing_1 | "Great Sword Slash" |
+| overhead_smash | "Overhead Attack" |
+| punch_1 | "Jab" / "Cross Punch" |
+| kick_1 | "Roundhouse Kick" |
+
+## Animation Resolution Order
+1. `shared` — base for all characters
+2. `weaponType` — weapon-specific overrides
+3. `perCharacter` — unique character overrides (highest priority)
