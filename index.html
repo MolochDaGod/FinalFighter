@@ -644,18 +644,18 @@
     };
 
     // ===== WEAPON ATTACK MAPPING =====
-    // Maps generic attack states to weapon-specific animation clip names
+    // Maps attack states to weapon-specific animation clip names (10 attacks per weapon)
     const WEAPON_ATTACK_MAP = {
-      sword:      { punch: 'slash_1', kick: 'thrust', special: 'special_whirlwind', combo_punch: 'slash_combo' },
-      dual_sword: { punch: 'dual_slash_1', kick: 'dual_slash_2', special: 'special_storm', combo_punch: 'dual_cross_slash' },
-      dual_blade: { punch: 'dual_slash_1', kick: 'dual_slash_2', special: 'special_storm', combo_punch: 'dual_cross_slash' },
-      axe:        { punch: 'swing_1', kick: 'swing_2', special: 'special_ground_pound', combo_punch: 'overhead_smash' },
-      fan:        { punch: 'fan_swipe_1', kick: 'fan_swipe_2', special: 'special_dance', combo_punch: 'fan_throw' },
-      mace:       { punch: 'smash_1', kick: 'smash_2', special: 'special_slam', combo_punch: 'uppercut' },
-      spear:      { punch: 'thrust_1', kick: 'thrust_2', special: 'special_charge', combo_punch: 'sweep' },
-      crossbow:   { punch: 'bash_1', kick: 'kick_1', special: 'special_volley', combo_punch: 'bash_combo' },
-      staff:      { punch: 'staff_strike_1', kick: 'staff_sweep', special: 'special_spell', combo_punch: 'staff_combo' },
-      unarmed:    { punch: 'punch_1', kick: 'kick_1', special: 'special_combo', combo_punch: 'punch_2' },
+      sword:      { attack_1: 'slash_1', attack_2: 'slash_2', attack_3: 'thrust', attack_4: 'overhead_slash', attack_5: 'cleave', attack_6: 'spin_slash', attack_7: 'rising_slash', attack_8: 'pommel_strike', attack_9: 'whirlwind', attack_10: 'blade_storm' },
+      dual_sword: { attack_1: 'dual_slash_1', attack_2: 'dual_slash_2', attack_3: 'dual_thrust', attack_4: 'dual_overhead', attack_5: 'dual_cleave', attack_6: 'dual_cross', attack_7: 'dual_quick', attack_8: 'dual_pommel', attack_9: 'dual_storm', attack_10: 'dual_finisher' },
+      dual_blade: { attack_1: 'dual_slash_1', attack_2: 'dual_slash_2', attack_3: 'dual_thrust', attack_4: 'dual_overhead', attack_5: 'dual_cleave', attack_6: 'dual_cross', attack_7: 'dual_quick', attack_8: 'dual_pommel', attack_9: 'dual_storm', attack_10: 'dual_finisher' },
+      axe:        { attack_1: 'chop_1', attack_2: 'chop_2', attack_3: 'overhead_smash', attack_4: 'heavy_swing', attack_5: 'slam', attack_6: 'ground_pound', attack_7: 'quick_chop', attack_8: 'axe_kick', attack_9: 'berserker_rage', attack_10: 'earth_splitter' },
+      fan:        { attack_1: 'fan_swipe_1', attack_2: 'fan_swipe_2', attack_3: 'fan_thrust', attack_4: 'fan_spin', attack_5: 'fan_gust', attack_6: 'fan_tornado', attack_7: 'fan_quick', attack_8: 'fan_toss', attack_9: 'fan_dance', attack_10: 'wind_fury' },
+      mace:       { attack_1: 'smash_1', attack_2: 'smash_2', attack_3: 'uppercut', attack_4: 'overhead_smash', attack_5: 'slam', attack_6: 'ground_pound', attack_7: 'quick_bash', attack_8: 'shield_bash', attack_9: 'holy_smash', attack_10: 'judgement' },
+      spear:      { attack_1: 'thrust_1', attack_2: 'thrust_2', attack_3: 'sweep', attack_4: 'heavy_thrust', attack_5: 'impale', attack_6: 'spin_attack', attack_7: 'quick_jab', attack_8: 'vault_kick', attack_9: 'piercing_charge', attack_10: 'dragon_lance' },
+      crossbow:   { attack_1: 'bash_1', attack_2: 'bash_2', attack_3: 'bash_combo', attack_4: 'heavy_bash', attack_5: 'slam', attack_6: 'overhead', attack_7: 'quick_shot', attack_8: 'bolt_volley', attack_9: 'explosive_bolt', attack_10: 'rain_of_bolts' },
+      staff:      { attack_1: 'staff_strike_1', attack_2: 'staff_strike_2', attack_3: 'staff_sweep', attack_4: 'staff_slam', attack_5: 'spin_staff', attack_6: 'overhead', attack_7: 'quick_jab', attack_8: 'magic_blast', attack_9: 'arcane_storm', attack_10: 'elemental_fury' },
+      unarmed:    { attack_1: 'punch_1', attack_2: 'punch_2', attack_3: 'punch_3', attack_4: 'elbow', attack_5: 'hook', attack_6: 'uppercut', attack_7: 'quick_jab', attack_8: 'knee_strike', attack_9: 'dragon_fist', attack_10: 'fury_combo' },
     };
 
     // ===== STATE =====
@@ -707,8 +707,8 @@
 
     const ACTION_LABELS = {
       move_left: 'Move Left', move_right: 'Move Right',
-      punch: 'Punch', kick: 'Kick', special: 'Special',
-      block: 'Block', menu: 'Menu / Pause', debug: 'Debug',
+      punch: 'Light Attack', kick: 'Heavy Attack', special: 'Special',
+      block: 'Block / Parry', menu: 'Menu / Pause', debug: 'Debug',
     };
 
     const DEFAULT_KB_BINDS = {
@@ -848,10 +848,10 @@
         ? `<span class="key-badge" style="border-color:#2a4080;color:#6090dd">${gpButtonName(gpBinds[action])}</span>` : '';
       const sep = '&nbsp;&nbsp;';
       let html = `${kb('move_left')} ${kb('move_right')} Move${sep}`;
-      html += `${kb('punch')}${gp_b('punch')} Punch${sep}`;
-      html += `${kb('kick')}${gp_b('kick')} Kick${sep}`;
+      html += `${kb('punch')}${gp_b('punch')} Light${sep}`;
+      html += `${kb('kick')}${gp_b('kick')} Heavy${sep}`;
       html += `${kb('special')}${gp_b('special')} Special${sep}`;
-      html += `${kb('block')}${gp_b('block')} Block${sep}`;
+      html += `${kb('block')}${gp_b('block')} Block/Parry${sep}`;
       html += `${kb('menu')} Menu${sep}${kb('debug')} Debug`;
       el.innerHTML = html;
     }
@@ -956,13 +956,6 @@
     loadBindings();
 
     // ===== COLLIDER SYSTEM (Three.js Box3) =====
-    // Attack reach defines the hitbox that extends from the attacker's body edge.
-    // { fwd: forward reach, up: vertical extent, wide: lateral width }
-    const ATTACK_HITBOXES = {
-      punch:   { fwd: 0.45, up: 0.3, wide: 0.25 }, // short jab
-      kick:    { fwd: 0.65, up: 0.4, wide: 0.3 },  // medium leg reach
-      special: { fwd: 0.9,  up: 0.6, wide: 0.5 },  // wide sweep/blast
-    };
 
     const FIGHTER_STATES = Object.freeze({
       IDLE: 'idle',
@@ -970,10 +963,19 @@
       WALK_BACK: 'walk_back',
       RUN_FWD: 'run_fwd',
       RUN_BACK: 'run_back',
-      PUNCH: 'punch',
-      KICK: 'kick',
-      SPECIAL: 'special',
+      ATTACK_1: 'attack_1',   // Light chain 1
+      ATTACK_2: 'attack_2',   // Light chain 2
+      ATTACK_3: 'attack_3',   // Light finisher
+      ATTACK_4: 'attack_4',   // Heavy chain 1
+      ATTACK_5: 'attack_5',   // Heavy chain 2
+      ATTACK_6: 'attack_6',   // Heavy finisher
+      ATTACK_7: 'attack_7',   // Light→Heavy bridge
+      ATTACK_8: 'attack_8',   // Heavy→Light bridge
+      ATTACK_9: 'attack_9',   // Special opener
+      ATTACK_10: 'attack_10', // Combo finisher / ultimate
       BLOCK: 'block',
+      PARRY: 'parry',
+      BLOCK_STUN: 'block_stun',
       DODGE: 'dodge',
       JUMP: 'jump',
       CROUCH: 'crouch',
@@ -987,35 +989,64 @@
       TAUNT: 'taunt',
     });
 
-    const ATTACK_FRAME_DATA = Object.freeze({
-      punch: {
-        windup: 90,
-        activeStart: 90,
-        activeEnd: 160,
-        recoveryEnd: 320,
-        cancelStart: 125,
-        cancelEnd: 270,
-        cooldown: 300,
-      },
-      kick: {
-        windup: 130,
-        activeStart: 130,
-        activeEnd: 220,
-        recoveryEnd: 500,
-        cancelStart: 190,
-        cancelEnd: 430,
-        cooldown: 500,
-      },
-      special: {
-        windup: 220,
-        activeStart: 220,
-        activeEnd: 340,
-        recoveryEnd: 1100,
-        cancelStart: 0,
-        cancelEnd: 0,
-        cooldown: 1200,
-      },
+    // ===== 10-ATTACK DEFINITIONS (frame data, damage, hitbox per attack) =====
+    // category: 'light'|'heavy'|'bridge'|'special' — drives knockdown, VFX, AI behavior
+    // hitbox: { fwd, up, wide } — attack reach from body edge
+    // knocksDown: true if this attack sends defender to KNOCKDOWN on hit
+    const DEFAULT_ATTACK_DEFS = Object.freeze({
+      attack_1:  { category: 'light',   baseDmg: 3,  dmgScale: 0.5, hitbox: { fwd: 0.45, up: 0.30, wide: 0.25 }, windup: 60,  activeStart: 60,  activeEnd: 120, recoveryEnd: 220, cancelStart: 90,  cancelEnd: 190,  cooldown: 200, knockback: 0.06, hitstun: 200, knocksDown: false },
+      attack_2:  { category: 'light',   baseDmg: 4,  dmgScale: 0.5, hitbox: { fwd: 0.50, up: 0.30, wide: 0.28 }, windup: 70,  activeStart: 70,  activeEnd: 140, recoveryEnd: 260, cancelStart: 105, cancelEnd: 220,  cooldown: 220, knockback: 0.08, hitstun: 220, knocksDown: false },
+      attack_3:  { category: 'light',   baseDmg: 6,  dmgScale: 0.6, hitbox: { fwd: 0.55, up: 0.35, wide: 0.30 }, windup: 90,  activeStart: 90,  activeEnd: 170, recoveryEnd: 340, cancelStart: 0,   cancelEnd: 0,    cooldown: 300, knockback: 0.12, hitstun: 280, knocksDown: false },
+      attack_4:  { category: 'heavy',   baseDmg: 6,  dmgScale: 0.7, hitbox: { fwd: 0.60, up: 0.40, wide: 0.35 }, windup: 120, activeStart: 120, activeEnd: 200, recoveryEnd: 420, cancelStart: 160, cancelEnd: 360,  cooldown: 400, knockback: 0.15, hitstun: 300, knocksDown: false },
+      attack_5:  { category: 'heavy',   baseDmg: 8,  dmgScale: 0.7, hitbox: { fwd: 0.65, up: 0.40, wide: 0.38 }, windup: 140, activeStart: 140, activeEnd: 230, recoveryEnd: 480, cancelStart: 190, cancelEnd: 400,  cooldown: 450, knockback: 0.18, hitstun: 340, knocksDown: false },
+      attack_6:  { category: 'heavy',   baseDmg: 10, dmgScale: 0.8, hitbox: { fwd: 0.70, up: 0.45, wide: 0.40 }, windup: 170, activeStart: 170, activeEnd: 270, recoveryEnd: 600, cancelStart: 0,   cancelEnd: 0,    cooldown: 550, knockback: 0.25, hitstun: 400, knocksDown: true },
+      attack_7:  { category: 'bridge',  baseDmg: 5,  dmgScale: 0.6, hitbox: { fwd: 0.55, up: 0.35, wide: 0.30 }, windup: 100, activeStart: 100, activeEnd: 180, recoveryEnd: 350, cancelStart: 140, cancelEnd: 300,  cooldown: 320, knockback: 0.10, hitstun: 250, knocksDown: false },
+      attack_8:  { category: 'bridge',  baseDmg: 5,  dmgScale: 0.6, hitbox: { fwd: 0.50, up: 0.35, wide: 0.28 }, windup: 80,  activeStart: 80,  activeEnd: 150, recoveryEnd: 300, cancelStart: 115, cancelEnd: 260,  cooldown: 280, knockback: 0.10, hitstun: 240, knocksDown: false },
+      attack_9:  { category: 'special', baseDmg: 10, dmgScale: 1.0, hitbox: { fwd: 0.85, up: 0.55, wide: 0.50 }, windup: 200, activeStart: 200, activeEnd: 320, recoveryEnd: 900, cancelStart: 260, cancelEnd: 700,  cooldown: 1000, knockback: 0.30, hitstun: 500, knocksDown: true },
+      attack_10: { category: 'special', baseDmg: 14, dmgScale: 1.0, hitbox: { fwd: 0.90, up: 0.60, wide: 0.55 }, windup: 250, activeStart: 250, activeEnd: 380, recoveryEnd: 1100, cancelStart: 0,   cancelEnd: 0,    cooldown: 1200, knockback: 0.40, hitstun: 600, knocksDown: true },
     });
+
+    // Per-character attack overrides (merge onto defaults)
+    const CHARACTER_ATTACK_OVERRIDES = {};
+    // Example: CHARACTER_ATTACK_OVERRIDES.Model001 = { attack_3: { baseDmg: 8 } };
+
+    function getAttackDef(fighter, attackState) {
+      const charId = fighter.char?.id;
+      const override = charId && CHARACTER_ATTACK_OVERRIDES[charId]?.[attackState];
+      const base = DEFAULT_ATTACK_DEFS[attackState];
+      if (!base) return null;
+      return override ? { ...base, ...override } : base;
+    }
+
+    // ===== COMBO ROUTING =====
+    // Maps [currentState] → { inputCategory: nextAttackState }
+    // null = from neutral (idle/walk/block)
+    const DEFAULT_COMBO_ROUTES = Object.freeze({
+      neutral:  { light: 'attack_1', heavy: 'attack_4', special: 'attack_9' },
+      attack_1: { light: 'attack_2', heavy: 'attack_7' },
+      attack_2: { light: 'attack_3', heavy: 'attack_8', special: 'attack_10' },
+      attack_3: {},  // terminal — light chain ender
+      attack_4: { heavy: 'attack_5', light: 'attack_8' },
+      attack_5: { heavy: 'attack_6', special: 'attack_10' },
+      attack_6: {},  // terminal — heavy chain ender
+      attack_7: { heavy: 'attack_5', light: 'attack_2' },
+      attack_8: { light: 'attack_3', heavy: 'attack_6' },
+      attack_9: { special: 'attack_10' },
+      attack_10: {}, // terminal — combo finisher
+    });
+
+    const CHARACTER_COMBO_OVERRIDES = {};
+    // Example: CHARACTER_COMBO_OVERRIDES.Model001 = { attack_1: { light: 'attack_2', heavy: 'attack_7', special: 'attack_9' } };
+
+    function getComboRoutes(fighter) {
+      const charId = fighter.char?.id;
+      return CHARACTER_COMBO_OVERRIDES[charId] || DEFAULT_COMBO_ROUTES;
+    }
+
+    // ===== PARRY SYSTEM =====
+    const PARRY_WINDOW_MS = 150;   // Block must be pressed within this window of incoming hit
+    const PARRY_STUN_MS = 600;     // Attacker stunned after being parried
+    const PARRY_RECOVER_MS = 300;  // Defender recovers from parry pose
 
     const STATE_RECOVERY_MS = Object.freeze({
       hit_react: 260,
@@ -1023,13 +1054,17 @@
       stun: 500,
       dodge: 350,
       getup: 400,
+      parry: PARRY_RECOVER_MS,
+      block_stun: PARRY_STUN_MS,
     });
 
     // Per-state crossfade durations (seconds) for animation blending
     const STATE_CROSSFADE = Object.freeze({
       idle: 0.2, walk_fwd: 0.2, walk_back: 0.2, run_fwd: 0.15, run_back: 0.15,
-      punch: 0.06, kick: 0.06, special: 0.08,
-      block: 0.1, dodge: 0.06, jump: 0.08, crouch: 0.12,
+      attack_1: 0.05, attack_2: 0.04, attack_3: 0.04, attack_4: 0.06, attack_5: 0.05,
+      attack_6: 0.06, attack_7: 0.05, attack_8: 0.04, attack_9: 0.08, attack_10: 0.08,
+      block: 0.1, parry: 0.04, block_stun: 0.04,
+      dodge: 0.06, jump: 0.08, crouch: 0.12,
       hit_react: 0.04, knockdown: 0.04, getup: 0.15, stun: 0.06,
       ko: 0.04, victory: 0.2, intro: 0.15, taunt: 0.2,
     });
@@ -1051,10 +1086,19 @@
       walk_back: ['walk_back', 'walk_backward', 'backpedal'],
       run_fwd: ['run_fwd', 'run', 'running', 'jog'],
       run_back: ['run_back', 'run_backward'],
-      punch: ['punch', 'jab', 'attack_1', 'attack', 'slash_1', 'swing_1', 'thrust_1', 'smash_1', 'punch_1', 'fan_swipe_1', 'bash_1', 'staff_strike_1'],
-      kick: ['kick', 'roundhouse', 'attack_2', 'slash_2', 'swing_2', 'thrust_2', 'smash_2', 'kick_1', 'fan_swipe_2', 'staff_sweep'],
-      special: ['special', 'ability', 'attack_special', 'slash_combo', 'special_whirlwind', 'special_storm', 'special_ground_pound', 'special_dance', 'special_slam', 'special_charge', 'special_volley', 'special_spell', 'special_combo'],
+      attack_1: ['attack_1', 'light_1', 'jab', 'slash_1', 'punch_1', 'chop_1', 'thrust_1', 'smash_1', 'fan_swipe_1', 'bash_1', 'staff_strike_1'],
+      attack_2: ['attack_2', 'light_2', 'cross', 'slash_2', 'punch_2', 'chop_2', 'thrust_2', 'smash_2', 'fan_swipe_2', 'bash_2', 'staff_strike_2'],
+      attack_3: ['attack_3', 'light_3', 'light_finisher', 'slash_3', 'punch_3', 'sweep', 'uppercut', 'fan_thrust', 'bash_combo', 'staff_sweep'],
+      attack_4: ['attack_4', 'heavy_1', 'overhead', 'heavy_swing', 'heavy_slash', 'fan_spin', 'heavy_thrust', 'heavy_bash', 'staff_slam', 'elbow'],
+      attack_5: ['attack_5', 'heavy_2', 'cleave', 'slam', 'fan_gust', 'impale', 'hook', 'spin_staff'],
+      attack_6: ['attack_6', 'heavy_3', 'heavy_finisher', 'spin_slash', 'ground_pound', 'fan_tornado', 'spin_attack', 'uppercut_heavy'],
+      attack_7: ['attack_7', 'bridge_1', 'light_to_heavy', 'rising_slash', 'quick_chop', 'fan_quick', 'quick_jab', 'quick_shot'],
+      attack_8: ['attack_8', 'bridge_2', 'heavy_to_light', 'pommel_strike', 'axe_kick', 'fan_toss', 'vault_kick', 'knee_strike', 'magic_blast'],
+      attack_9: ['attack_9', 'special_1', 'ability', 'whirlwind', 'berserker_rage', 'fan_dance', 'holy_smash', 'piercing_charge', 'explosive_bolt', 'arcane_storm', 'dragon_fist'],
+      attack_10: ['attack_10', 'special_2', 'combo_finisher', 'ultimate', 'blade_storm', 'earth_splitter', 'wind_fury', 'judgement', 'dragon_lance', 'rain_of_bolts', 'elemental_fury', 'fury_combo'],
       block: ['block', 'blocking', 'guard', 'block_high'],
+      parry: ['parry', 'deflect', 'counter_block', 'perfect_block'],
+      block_stun: ['block_stun', 'stagger', 'recoil', 'guard_break'],
       dodge: ['dodge', 'dodge_back', 'dodge_left', 'dodge_right', 'evade', 'roll'],
       jump: ['jump', 'jumping'],
       crouch: ['crouch', 'crouching', 'duck'],
@@ -1089,9 +1133,7 @@
     }
 
     function isAttackState(state) {
-      return state === FIGHTER_STATES.PUNCH
-        || state === FIGHTER_STATES.KICK
-        || state === FIGHTER_STATES.SPECIAL;
+      return typeof state === 'string' && state.startsWith('attack_');
     }
 
     function getFighterFacingDir(fighter) {
@@ -1106,6 +1148,8 @@
         attackType: null,
         attackResolved: false,
         queuedAttack: null,
+        blockStartTime: 0,       // timestamp when BLOCK was entered (for parry window)
+        lastAttackState: null,    // previous attack state (for combo routing)
       };
     }
 
@@ -1194,17 +1238,34 @@
       if (!fighter?.combat) return;
       const force = !!opts.force;
       if (!force && fighter.combat.state === nextState) return;
+
+      const prevState = fighter.combat.state;
       fighter.combat.state = nextState;
       fighter.combat.stateTime = 0;
       fighter.blocking = nextState === FIGHTER_STATES.BLOCK;
 
+      // Track block entry time for parry window
+      if (nextState === FIGHTER_STATES.BLOCK && prevState !== FIGHTER_STATES.BLOCK) {
+        fighter.combat.blockStartTime = Date.now();
+      }
+      if (nextState !== FIGHTER_STATES.BLOCK && nextState !== FIGHTER_STATES.PARRY) {
+        fighter.combat.blockStartTime = 0;
+      }
+
       if (isAttackState(nextState)) {
         fighter.combat.attackType = nextState;
         fighter.combat.attackResolved = false;
+        fighter.combat.lastAttackState = nextState;
       } else {
         fighter.combat.attackType = null;
         fighter.combat.attackResolved = false;
-        if (!isAttackState(nextState)) fighter.combat.queuedAttack = null;
+        fighter.combat.queuedAttack = null;
+        // Reset combo history when leaving attack chain
+        if (nextState === FIGHTER_STATES.IDLE || nextState === FIGHTER_STATES.HIT_REACT
+            || nextState === FIGHTER_STATES.KNOCKDOWN || nextState === FIGHTER_STATES.KO
+            || nextState === FIGHTER_STATES.BLOCK_STUN) {
+          fighter.combat.lastAttackState = null;
+        }
       }
       playFighterAnimation(fighter, nextState);
     }
@@ -1233,27 +1294,43 @@
       setFighterState(fighter, FIGHTER_STATES.IDLE, { force: true });
     }
 
-    function queueAttack(fighter, attackType) {
+    // ===== COMBO INPUT SYSTEM =====
+    // Routes light/heavy/special inputs through combo tree to determine attack state
+    function processComboInput(fighter, inputCategory) {
       if (!fighter || fighter.hp <= 0) return false;
-      if (!ATTACK_FRAME_DATA[attackType]) return false;
       if (fighter.cooldown > 0 || fighter.stunned > 0) return false;
+
       const s = fighter.combat.state;
-      if (
-        s === FIGHTER_STATES.IDLE
-        || s === FIGHTER_STATES.WALK_FWD
-        || s === FIGHTER_STATES.WALK_BACK
-        || s === FIGHTER_STATES.BLOCK
-      ) {
-        setFighterState(fighter, attackType, { force: true });
-        return true;
-      }
-      if (isAttackState(s)) {
-        const spec = ATTACK_FRAME_DATA[fighter.combat.attackType || s];
-        if (spec && fighter.combat.stateTime >= spec.cancelStart && fighter.combat.stateTime <= spec.cancelEnd) {
-          fighter.combat.queuedAttack = attackType;
+      const routes = getComboRoutes(fighter);
+
+      // From neutral states: start a new combo
+      if (s === FIGHTER_STATES.IDLE || s === FIGHTER_STATES.WALK_FWD
+          || s === FIGHTER_STATES.WALK_BACK || s === FIGHTER_STATES.BLOCK) {
+        const neutralRoutes = routes.neutral;
+        const nextAttack = neutralRoutes?.[inputCategory];
+        if (nextAttack && getAttackDef(fighter, nextAttack)) {
+          setFighterState(fighter, nextAttack, { force: true });
           return true;
         }
+        return false;
       }
+
+      // From an active attack: chain into next via cancel window
+      if (isAttackState(s)) {
+        const def = getAttackDef(fighter, s);
+        if (!def) return false;
+        // Must be in cancel window to chain
+        if (def.cancelStart > 0 && fighter.combat.stateTime >= def.cancelStart
+            && fighter.combat.stateTime <= def.cancelEnd) {
+          const attackRoutes = routes[s];
+          const nextAttack = attackRoutes?.[inputCategory];
+          if (nextAttack && getAttackDef(fighter, nextAttack)) {
+            fighter.combat.queuedAttack = nextAttack;
+            return true;
+          }
+        }
+      }
+
       return false;
     }
 
@@ -1264,25 +1341,30 @@
       const state = fighter.combat.state;
       if (state === FIGHTER_STATES.KO || state === FIGHTER_STATES.VICTORY) return;
 
-      if (fighter.stunned > 0 && !isAttackState(state) && state !== FIGHTER_STATES.KNOCKDOWN) {
+      // Stun override
+      if (fighter.stunned > 0 && !isAttackState(state)
+          && state !== FIGHTER_STATES.KNOCKDOWN && state !== FIGHTER_STATES.BLOCK_STUN) {
         setFighterState(fighter, FIGHTER_STATES.HIT_REACT);
         return;
       }
 
+      // --- Attack state processing ---
       if (isAttackState(state)) {
-        const spec = ATTACK_FRAME_DATA[fighter.combat.attackType];
-        if (!spec) {
+        const def = getAttackDef(fighter, fighter.combat.attackType);
+        if (!def) {
           setFighterState(fighter, FIGHTER_STATES.IDLE);
           return;
         }
-        if (!fighter.combat.attackResolved && fighter.combat.stateTime >= spec.activeStart) {
+        // Resolve hit on active frame
+        if (!fighter.combat.attackResolved && fighter.combat.stateTime >= def.activeStart) {
           fighter.combat.attackResolved = true;
           performAttack(fighter, opponent, fighter.combat.attackType);
         }
-        if (fighter.combat.stateTime >= spec.recoveryEnd) {
+        // Recovery end: execute queued combo or return to idle
+        if (fighter.combat.stateTime >= def.recoveryEnd) {
           const queued = fighter.combat.queuedAttack;
           fighter.combat.queuedAttack = null;
-          if (queued && ATTACK_FRAME_DATA[queued]) {
+          if (queued && getAttackDef(fighter, queued)) {
             setFighterState(fighter, queued, { force: true });
           } else {
             setFighterState(fighter, FIGHTER_STATES.IDLE);
@@ -1291,6 +1373,7 @@
         return;
       }
 
+      // --- Recovery states ---
       if (state === FIGHTER_STATES.HIT_REACT || state === FIGHTER_STATES.KNOCKDOWN) {
         const recoverAt = STATE_RECOVERY_MS[state] || 300;
         if (fighter.combat.stateTime >= recoverAt) {
@@ -1299,6 +1382,23 @@
         return;
       }
 
+      // --- Parry recovery (defender returns to idle) ---
+      if (state === FIGHTER_STATES.PARRY) {
+        if (fighter.combat.stateTime >= PARRY_RECOVER_MS) {
+          setFighterState(fighter, FIGHTER_STATES.IDLE);
+        }
+        return;
+      }
+
+      // --- Block stun recovery (attacker was parried) ---
+      if (state === FIGHTER_STATES.BLOCK_STUN) {
+        if (fighter.combat.stateTime >= PARRY_STUN_MS) {
+          setFighterState(fighter, FIGHTER_STATES.IDLE);
+        }
+        return;
+      }
+
+      // --- Block ---
       if (blockHeld && fighter.cooldown <= 0 && fighter.stunned <= 0) {
         setFighterState(fighter, FIGHTER_STATES.BLOCK);
         return;
@@ -1308,6 +1408,7 @@
         return;
       }
 
+      // --- Movement ---
       if (Math.abs(moveIntent) > 0.001) {
         const facingDir = opponent.x >= fighter.x ? 1 : -1;
         const moveState = Math.sign(moveIntent) === facingDir
@@ -1321,9 +1422,9 @@
 
     function isAttackActiveFrame(fighter) {
       if (!fighter?.combat || !isAttackState(fighter.combat.state)) return false;
-      const spec = ATTACK_FRAME_DATA[fighter.combat.attackType];
-      if (!spec) return false;
-      return fighter.combat.stateTime >= spec.activeStart && fighter.combat.stateTime <= spec.activeEnd;
+      const def = getAttackDef(fighter, fighter.combat.attackType);
+      if (!def) return false;
+      return fighter.combat.stateTime >= def.activeStart && fighter.combat.stateTime <= def.activeEnd;
     }
 
     // ===== PROCEDURAL ANIMATION FALLBACK =====
@@ -1348,6 +1449,36 @@
       g.rotation.z = 0;
       g.position.y = by;
 
+      // --- Generic attack animation (handles all attack_1 through attack_10) ---
+      if (isAttackState(state)) {
+        const def = getAttackDef(fighter, state);
+        if (def) {
+          const power = def.category === 'special' ? 2.0 : def.category === 'heavy' ? 1.4 : 1.0;
+          const isKick = (state === 'attack_4' || state === 'attack_5' || state === 'attack_6');
+          if (t < def.activeStart) {
+            // Windup: lean back, coil
+            const w = t / def.activeStart;
+            g.rotation.x = w * 0.08 * power;
+            g.position.y = by - w * 0.02 * power;
+            if (def.category === 'special') g.rotation.z = Math.sin(w * Math.PI * 2) * 0.04;
+          } else if (t <= def.activeEnd) {
+            // Strike: snap forward
+            const a = (t - def.activeStart) / (def.activeEnd - def.activeStart);
+            g.rotation.x = -0.15 * power * (1 - a * 0.5);
+            g.position.y = by + 0.03 * power;
+            if (isKick) g.rotation.z = -0.08 * a;
+            if (def.category === 'special') g.rotation.z = Math.sin(t * 0.02) * 0.06;
+          } else {
+            // Recovery: return to neutral
+            const r = Math.min(1, (t - def.activeEnd) / (def.recoveryEnd - def.activeEnd));
+            g.rotation.x = -0.15 * power * (1 - r);
+            g.position.y = by + 0.03 * power * (1 - r);
+            if (isKick) g.rotation.z = -0.08 * (1 - r);
+          }
+        }
+        return;
+      }
+
       switch (state) {
         // --- IDLE: gentle breathing bob ---
         case FIGHTER_STATES.IDLE: {
@@ -1367,68 +1498,33 @@
           g.rotation.x = 0.06;
           break;
         }
-        // --- PUNCH ---
-        case FIGHTER_STATES.PUNCH: {
-          const sp = ATTACK_FRAME_DATA.punch;
-          if (t < sp.activeStart) {
-            const w = t / sp.activeStart;
-            g.rotation.x = w * 0.08;
-            g.position.y = by - w * 0.02;
-          } else if (t <= sp.activeEnd) {
-            const a = (t - sp.activeStart) / (sp.activeEnd - sp.activeStart);
-            g.rotation.x = -0.15 * (1 - a * 0.5);
-            g.position.y = by + 0.03;
-          } else {
-            const r = Math.min(1, (t - sp.activeEnd) / (sp.recoveryEnd - sp.activeEnd));
-            g.rotation.x = -0.15 * (1 - r);
-            g.position.y = by + 0.03 * (1 - r);
-          }
-          break;
-        }
-        // --- KICK ---
-        case FIGHTER_STATES.KICK: {
-          const sp = ATTACK_FRAME_DATA.kick;
-          if (t < sp.activeStart) {
-            const w = t / sp.activeStart;
-            g.rotation.x = w * 0.06;
-            g.position.y = by + w * 0.04;
-          } else if (t <= sp.activeEnd) {
-            const a = (t - sp.activeStart) / (sp.activeEnd - sp.activeStart);
-            g.rotation.x = -0.12;
-            g.rotation.z = -0.08 * a;
-            g.position.y = by + 0.06;
-          } else {
-            const r = Math.min(1, (t - sp.activeEnd) / (sp.recoveryEnd - sp.activeEnd));
-            g.rotation.x = -0.12 * (1 - r);
-            g.rotation.z = -0.08 * (1 - r);
-            g.position.y = by + 0.06 * (1 - r);
-          }
-          break;
-        }
-        // --- SPECIAL ---
-        case FIGHTER_STATES.SPECIAL: {
-          const sp = ATTACK_FRAME_DATA.special;
-          if (t < sp.activeStart) {
-            const w = t / sp.activeStart;
-            g.rotation.x = w * 0.1;
-            g.position.y = by + w * 0.05;
-            g.rotation.z = Math.sin(w * Math.PI * 2) * 0.04;
-          } else if (t <= sp.activeEnd) {
-            g.rotation.x = -0.2;
-            g.position.y = by + 0.08;
-            g.rotation.z = Math.sin(t * 0.02) * 0.06;
-          } else {
-            const r = Math.min(1, (t - sp.activeEnd) / (sp.recoveryEnd - sp.activeEnd));
-            g.rotation.x = -0.2 * (1 - r);
-            g.position.y = by + 0.08 * (1 - r);
-          }
-          break;
-        }
         // --- BLOCK: crouch + lean back ---
         case FIGHTER_STATES.BLOCK: {
           const ease = Math.min(1, t / 100);
           g.position.y = by - 0.06 * ease;
           g.rotation.x = 0.1 * ease;
+          break;
+        }
+        // --- PARRY: sharp deflect snap ---
+        case FIGHTER_STATES.PARRY: {
+          const p = Math.min(1, t / PARRY_RECOVER_MS);
+          if (p < 0.2) {
+            const s = p / 0.2;
+            g.rotation.x = -s * 0.15;
+            g.position.y = by + s * 0.05;
+          } else {
+            const s = (p - 0.2) / 0.8;
+            g.rotation.x = -0.15 * (1 - s);
+            g.position.y = by + 0.05 * (1 - s);
+          }
+          break;
+        }
+        // --- BLOCK STUN: stagger after parried ---
+        case FIGHTER_STATES.BLOCK_STUN: {
+          const p = Math.min(1, t / PARRY_STUN_MS);
+          g.rotation.x = 0.15 * (1 - p);
+          g.rotation.z = Math.sin(t * 0.03) * 0.04 * (1 - p);
+          g.position.y = by - 0.04 * (1 - p);
           break;
         }
         // --- HIT REACT: snap back then recover ---
@@ -1516,8 +1612,9 @@
     }
 
     // Build an attack hitbox extending from the attacker toward the defender.
-    function getAttackHitbox(attacker, attackType) {
-      const atk = ATTACK_HITBOXES[attackType];
+    function getAttackHitbox(attacker, attackState) {
+      const def = getAttackDef(attacker, attackState);
+      const atk = def?.hitbox;
       if (!atk) return null;
       const b = attacker.bounds;
       const facingRight = attacker.group.rotation.y < Math.PI / 2;
@@ -1617,24 +1714,29 @@
       }
     }
 
-    function spawnAttackVFX(attacker, defender, attackType, blocked) {
+    function spawnAttackVFX(attacker, defender, attackState, blocked) {
       const hitX = (attacker.x + defender.x) / 2;
       const hitY = attacker.bounds.hh;
       const facingRight = defender.x > attacker.x;
-      const colors = {
-        punch: 0xeeb72b,
-        kick: 0xff6633,
-        special: 0xac4bff,
-      };
-      const color = colors[attackType] || 0xeeb72b;
+      const def = getAttackDef(attacker, attackState);
+      const cat = def?.category || 'light';
+      const CATEGORY_COLORS = { light: 0xeeb72b, heavy: 0xff6633, bridge: 0xff9944, special: 0xac4bff };
+      const color = CATEGORY_COLORS[cat] || 0xeeb72b;
 
       if (blocked) {
         spawnImpactSparks(hitX, hitY, 4, 0x3080ff);
       } else {
         spawnSlashVFX(hitX, hitY, facingRight, color);
-        const sparkCount = attackType === 'special' ? 12 : attackType === 'kick' ? 8 : 5;
+        const sparkCount = cat === 'special' ? 12 : cat === 'heavy' ? 8 : 5;
         spawnImpactSparks(hitX, hitY, sparkCount, color);
       }
+    }
+
+    function spawnParryVFX(defender, attacker) {
+      const hitX = (attacker.x + defender.x) / 2;
+      const hitY = defender.bounds.hh;
+      spawnImpactSparks(hitX, hitY, 10, 0x44ffff);
+      spawnSlashVFX(hitX, hitY, defender.x < attacker.x, 0x44ffff);
     }
 
     function updateVFX(dt) {
@@ -1875,16 +1977,16 @@
     let previewLastFrame = 0;
     const PREVIEW_SEQUENCE = [
       // { state, duration (ms) }
-      { state: 'idle',    dur: 400 },
-      { state: 'punch',   dur: 350 },
-      { state: 'idle',    dur: 200 },
-      { state: 'kick',    dur: 400 },
-      { state: 'idle',    dur: 200 },
-      { state: 'special', dur: 500 },
-      { state: 'idle',    dur: 250 },
-      { state: 'punch',   dur: 350 },
-      { state: 'kick',    dur: 400 },
-      { state: 'idle',    dur: -1 },  // -1 = hold forever
+      { state: 'idle',      dur: 400 },
+      { state: 'attack_1',  dur: 300 },  // light jab
+      { state: 'attack_2',  dur: 300 },  // light follow-up
+      { state: 'attack_3',  dur: 350 },  // light finisher
+      { state: 'idle',      dur: 200 },
+      { state: 'attack_4',  dur: 400 },  // heavy opener
+      { state: 'attack_5',  dur: 400 },  // heavy follow-up
+      { state: 'idle',      dur: 200 },
+      { state: 'attack_9',  dur: 500 },  // special
+      { state: 'idle',      dur: -1 },   // -1 = hold forever
     ];
 
     function getPreviewState() {
@@ -1909,66 +2011,41 @@
       group.position.y = baseY;
 
       const now = Date.now();
+
+      // Handle attack states generically using DEFAULT_ATTACK_DEFS
+      if (isAttackState(state)) {
+        const def = DEFAULT_ATTACK_DEFS[state];
+        if (def) {
+          const dur = def.recoveryEnd;
+          const power = def.category === 'special' ? 2.0 : def.category === 'heavy' ? 1.4 : 1.0;
+          const isHeavy = def.category === 'heavy';
+          const p = Math.min(1, t / dur);
+          const windupT = def.activeStart / dur;
+          const activeT = def.activeEnd / dur;
+          if (p < windupT) {
+            const w = p / windupT;
+            group.rotation.x = w * 0.08 * power;
+            group.position.y = baseY - w * 0.02 * power;
+            if (def.category === 'special') group.rotation.z = Math.sin(w * Math.PI * 2) * 0.04;
+          } else if (p < activeT) {
+            const a = (p - windupT) / (activeT - windupT);
+            group.rotation.x = -0.15 * power * (1 - a * 0.5);
+            group.position.y = baseY + 0.03 * power;
+            if (isHeavy) group.rotation.z = -0.08 * a;
+            if (def.category === 'special') group.rotation.z = Math.sin(t * 0.02) * 0.06;
+          } else {
+            const r = (p - activeT) / (1 - activeT);
+            group.rotation.x = -0.15 * power * (1 - r);
+            group.position.y = baseY + 0.03 * power * (1 - r);
+            if (isHeavy) group.rotation.z = -0.08 * (1 - r);
+          }
+        }
+        return;
+      }
+
       switch (state) {
         case 'idle': {
           group.position.y = baseY + Math.sin(now * 0.003) * 0.015;
-          break;
-        }
-        case 'punch': {
-          const dur = 350;
-          const p = Math.min(1, t / dur);
-          if (p < 0.3) {
-            const w = p / 0.3;
-            group.rotation.x = w * 0.08;
-            group.position.y = baseY - w * 0.02;
-          } else if (p < 0.6) {
-            const a = (p - 0.3) / 0.3;
-            group.rotation.x = -0.15 * (1 - a * 0.5);
-            group.position.y = baseY + 0.03;
-          } else {
-            const r = (p - 0.6) / 0.4;
-            group.rotation.x = -0.15 * (1 - r);
-            group.position.y = baseY + 0.03 * (1 - r);
-          }
-          break;
-        }
-        case 'kick': {
-          const dur = 400;
-          const p = Math.min(1, t / dur);
-          if (p < 0.25) {
-            const w = p / 0.25;
-            group.rotation.x = w * 0.06;
-            group.position.y = baseY + w * 0.04;
-          } else if (p < 0.55) {
-            const a = (p - 0.25) / 0.3;
-            group.rotation.x = -0.12;
-            group.rotation.z = -0.08 * a;
-            group.position.y = baseY + 0.06;
-          } else {
-            const r = (p - 0.55) / 0.45;
-            group.rotation.x = -0.12 * (1 - r);
-            group.rotation.z = -0.08 * (1 - r);
-            group.position.y = baseY + 0.06 * (1 - r);
-          }
-          break;
-        }
-        case 'special': {
-          const dur = 500;
-          const p = Math.min(1, t / dur);
-          if (p < 0.3) {
-            const w = p / 0.3;
-            group.rotation.x = w * 0.1;
-            group.position.y = baseY + w * 0.05;
-            group.rotation.z = Math.sin(w * Math.PI * 2) * 0.04;
-          } else if (p < 0.6) {
-            group.rotation.x = -0.2;
-            group.position.y = baseY + 0.08;
-            group.rotation.z = Math.sin(t * 0.02) * 0.06;
-          } else {
-            const r = (p - 0.6) / 0.4;
-            group.rotation.x = -0.2 * (1 - r);
-            group.position.y = baseY + 0.08 * (1 - r);
-          }
           break;
         }
       }
@@ -2399,10 +2476,13 @@
 
     // ===== ATTACK LOGIC (Hitbox/Hurtbox) =====
     // Called by the combat state machine during active frames (once per attack).
-    // Timing is governed entirely by ATTACK_FRAME_DATA — no cooldown set here.
-    function performAttack(attacker, defender, attackType) {
+    // Timing is governed by DEFAULT_ATTACK_DEFS — no cooldown set here.
+    function performAttack(attacker, defender, attackState) {
+      const def = getAttackDef(attacker, attackState);
+      if (!def) return;
+
       // --- Hitbox range check: attack must physically reach defender ---
-      const attackBox = getAttackHitbox(attacker, attackType);
+      const attackBox = getAttackHitbox(attacker, attackState);
       const defenderBody = getBodyCollider(defender);
       if (!attackBox || !attackBox.intersectsBox(defenderBody)) {
         // Whiff — state machine still plays recovery, no extra cooldown needed
@@ -2430,20 +2510,23 @@
       }
 
       const now = Date.now();
-      let baseDmg;
 
-      switch (attackType) {
-        case 'punch':
-          baseDmg = 3 + Math.floor(attacker.char.atk * 0.5);
-          break;
-        case 'kick':
-          baseDmg = 5 + Math.floor(attacker.char.atk * 0.7);
-          break;
-        case 'special':
-          baseDmg = 8 + attacker.char.atk;
-          break;
-        default: return;
+      // --- PARRY CHECK: if defender is blocking within parry window ---
+      if (defender.blocking && defender.combat?.blockStartTime > 0) {
+        const blockElapsed = now - defender.combat.blockStartTime;
+        if (blockElapsed <= PARRY_WINDOW_MS) {
+          // PARRY! Deflect and stun attacker
+          setFighterState(defender, FIGHTER_STATES.PARRY, { force: true });
+          setFighterState(attacker, FIGHTER_STATES.BLOCK_STUN, { force: true });
+          attacker.stunned = PARRY_STUN_MS;
+          spawnParryVFX(defender, attacker);
+          triggerScreenShake(0.18);
+          return; // no damage on parry
+        }
       }
+
+      // --- Damage from attack def ---
+      let baseDmg = def.baseDmg + Math.floor(attacker.char.atk * def.dmgScale);
 
       // Zone damage modifier: headshots hurt more, leg hits less
       if (hitZone === 'upper') baseDmg = Math.floor(baseDmg * 1.25);
@@ -2452,8 +2535,10 @@
       // Defense reduction
       let finalDmg = baseDmg;
       if (defender.blocking) {
+        // Normal block: chip damage
         finalDmg = Math.max(1, Math.floor(baseDmg * 0.2));
-        if (attackType === 'special') attacker.stunned = 600;
+        // Heavy finishers and specials cause block stun
+        if (def.category === 'special') attacker.stunned = 600;
       } else {
         finalDmg = Math.max(1, baseDmg - Math.floor(defender.char.def * 0.3));
       }
@@ -2477,7 +2562,7 @@
       if (defender.combat) {
         if (defender.hp <= 0) {
           setFighterState(defender, FIGHTER_STATES.KO, { force: true });
-        } else if (attackType === 'special' && !defender.blocking) {
+        } else if (def.knocksDown && !defender.blocking) {
           setFighterState(defender, FIGHTER_STATES.KNOCKDOWN, { force: true });
         } else if (!defender.blocking) {
           setFighterState(defender, FIGHTER_STATES.HIT_REACT, { force: true });
@@ -2485,18 +2570,18 @@
       }
 
       // VFX + screen shake
-      spawnAttackVFX(attacker, defender, attackType, defender.blocking);
-      const shakeAmount = defender.blocking ? 0.05 : (attackType === 'special' ? 0.25 : attackType === 'kick' ? 0.12 : 0.06);
+      spawnAttackVFX(attacker, defender, attackState, defender.blocking);
+      const shakeAmount = defender.blocking ? 0.05
+        : (def.category === 'special' ? 0.25 : def.category === 'heavy' ? 0.12 : 0.06);
       triggerScreenShake(shakeAmount);
 
       const isP1Target = defender === gameState.p1;
       showDamage(finalDmg, isP1Target);
       showCombo(isP1Target ? 'p2' : 'p1', attacker.combo);
 
-      // Knockback (scaled by attack type)
+      // Knockback from attack def
       if (!defender.blocking) {
-        const knockback = attackType === 'special' ? 0.35 : attackType === 'kick' ? 0.2 : 0.12;
-        const dir = defender.x > attacker.x ? knockback : -knockback;
+        const dir = defender.x > attacker.x ? def.knockback : -def.knockback;
         defender.x = Math.max(-3.5, Math.min(3.5, defender.x + dir));
         defender.group.position.x = defender.x;
       }
@@ -2526,7 +2611,9 @@
       const aiLocked = isAttackState(ai.combat?.state)
         || ai.combat?.state === FIGHTER_STATES.HIT_REACT
         || ai.combat?.state === FIGHTER_STATES.KNOCKDOWN
-        || ai.combat?.state === FIGHTER_STATES.KO;
+        || ai.combat?.state === FIGHTER_STATES.KO
+        || ai.combat?.state === FIGHTER_STATES.PARRY
+        || ai.combat?.state === FIGHTER_STATES.BLOCK_STUN;
       if (!aiLocked) {
         const moveSpeed = 1.5 * (ai.char.spd / 10);
         if (dist > 1.2) {
@@ -2550,11 +2637,11 @@
         if (roll < 0.15) {
           aiBlock = true;
         } else if (roll < 0.5) {
-          queueAttack(ai, 'punch');
+          processComboInput(ai, 'light');
         } else if (roll < 0.8) {
-          queueAttack(ai, 'kick');
+          processComboInput(ai, 'heavy');
         } else {
-          queueAttack(ai, 'special');
+          processComboInput(ai, 'special');
         }
       }
 
@@ -2659,7 +2746,9 @@
         const p1Locked = isAttackState(p1.combat?.state)
           || p1.combat?.state === FIGHTER_STATES.HIT_REACT
           || p1.combat?.state === FIGHTER_STATES.KNOCKDOWN
-          || p1.combat?.state === FIGHTER_STATES.KO;
+          || p1.combat?.state === FIGHTER_STATES.KO
+          || p1.combat?.state === FIGHTER_STATES.PARRY
+          || p1.combat?.state === FIGHTER_STATES.BLOCK_STUN;
         if (!p1Locked && p1MoveIntent !== 0) {
           p1.x += p1MoveIntent * moveSpeed * dt / 1000;
           p1.x = Math.max(-3.5, Math.min(3.5, p1.x));
@@ -2670,9 +2759,9 @@
         p1.group.rotation.y = gameState.p2.x > p1.x ? 0 : Math.PI;
 
         // Gamepad attack buttons (checked once per frame after pollGamepad)
-        if (gpActionDown('punch')) queueAttack(p1, 'punch');
-        if (gpActionDown('kick')) queueAttack(p1, 'kick');
-        if (gpActionDown('special')) queueAttack(p1, 'special');
+        if (gpActionDown('punch')) processComboInput(p1, 'light');
+        if (gpActionDown('kick')) processComboInput(p1, 'heavy');
+        if (gpActionDown('special')) processComboInput(p1, 'special');
 
         // Block: keyboard OR gamepad held
         const blockHeld = !!keys[kbBinds.block] || gpActionHeld('block');
@@ -2731,9 +2820,9 @@
       if (!battleActive || !gameState || gameState.paused) return;
       const p1 = gameState.p1;
 
-      if (e.code === kbBinds.punch) queueAttack(p1, 'punch');
-      if (e.code === kbBinds.kick) queueAttack(p1, 'kick');
-      if (e.code === kbBinds.special) queueAttack(p1, 'special');
+      if (e.code === kbBinds.punch) processComboInput(p1, 'light');
+      if (e.code === kbBinds.kick) processComboInput(p1, 'heavy');
+      if (e.code === kbBinds.special) processComboInput(p1, 'special');
       if (e.code === kbBinds.menu) backToSelect();
     });
 
