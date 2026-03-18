@@ -532,6 +532,481 @@
       special: { fwd: 0.9,  up: 0.6, wide: 0.5 },  // wide sweep/blast
     };
 
+    const FIGHTER_STATES = Object.freeze({
+      IDLE: 'idle',
+      WALK_FWD: 'walk_fwd',
+      WALK_BACK: 'walk_back',
+      PUNCH: 'punch',
+      KICK: 'kick',
+      SPECIAL: 'special',
+      BLOCK: 'block',
+      HIT_REACT: 'hit_react',
+      KNOCKDOWN: 'knockdown',
+      KO: 'ko',
+      VICTORY: 'victory',
+    });
+
+    const ATTACK_FRAME_DATA = Object.freeze({
+      punch: {
+        windup: 90,
+        activeStart: 90,
+        activeEnd: 160,
+        recoveryEnd: 320,
+        cancelStart: 125,
+        cancelEnd: 270,
+        cooldown: 300,
+      },
+      kick: {
+        windup: 130,
+        activeStart: 130,
+        activeEnd: 220,
+        recoveryEnd: 500,
+        cancelStart: 190,
+        cancelEnd: 430,
+        cooldown: 500,
+      },
+      special: {
+        windup: 220,
+        activeStart: 220,
+        activeEnd: 340,
+        recoveryEnd: 1100,
+        cancelStart: 0,
+        cancelEnd: 0,
+        cooldown: 1200,
+      },
+    });
+
+    const STATE_RECOVERY_MS = Object.freeze({
+      hit_react: 260,
+      knockdown: 900,
+    });
+
+    const LOOPING_ANIMATION_STATES = new Set([
+      FIGHTER_STATES.IDLE,
+      FIGHTER_STATES.WALK_FWD,
+      FIGHTER_STATES.WALK_BACK,
+      FIGHTER_STATES.BLOCK,
+    ]);
+
+    const MIXAMO_STATE_ALIASES = Object.freeze({
+      idle: ['idle'],
+      walk_fwd: ['walk_fwd', 'walk_forward', 'walk', 'walking'],
+      walk_back: ['walk_back', 'walk_backward', 'backpedal', 'walk_backward_loop'],
+      punch: ['punch', 'jab', 'attack_1', 'attack'],
+      kick: ['kick', 'roundhouse', 'attack_2'],
+      special: ['special', 'ability', 'attack_special', 'slash', 'spellcast'],
+      block: ['block', 'blocking', 'guard'],
+      hit_react: ['hit_react', 'hit', 'pain', 'react'],
+      knockdown: ['knockdown', 'fall', 'down', 'knocked_down'],
+      ko: ['ko', 'death', 'dead', 'defeat'],
+      victory: ['victory', 'win', 'celebrate', 'taunt'],
+    });
+
+    // Populate this with your exported Mixamo clip files when ready.
+    // Example:
+    // shared: { idle: './animations/shared/idle.glb' }
+    // perCharacter: { Model001: { special: './animations/Model001/special.glb' } }
+    const MIXAMO_CLIP_MANIFEST = {
+      shared: {},
+      perCharacter: {},
+    };
+
+    const mixamoClipLoader = new GLTFLoader();
+
+    function normalizeClipName(name = '') {
+      return String(name).trim().toLowerCase().replace(/[\s\-]+/g, '_');
+    }
+
+    function isAttackState(state) {
+      return state === FIGHTER_STATES.PUNCH
+        || state === FIGHTER_STATES.KICK
+        || state === FIGHTER_STATES.SPECIAL;
+    }
+
+    function getFighterFacingDir(fighter) {
+      const y = fighter.group.rotation.y % (Math.PI * 2);
+      return (y < Math.PI / 2 || y > Math.PI * 1.5) ? 1 : -1;
+    }
+
+    function createFighterCombatState() {
+      return {
+        state: FIGHTER_STATES.IDLE,
+        stateTime: 0,
+        attackType: null,
+        attackResolved: false,
+        queuedAttack: null,
+      };
+    }
+
+    function getManifestForCharacter(charId) {
+      return {
+        ...(MIXAMO_CLIP_MANIFEST.shared || {}),
+        ...((MIXAMO_CLIP_MANIFEST.perCharacter || {})[charId] || {}),
+      };
+    }
+
+    function createFighterAnimationState(fighter) {
+      return {
+        mixer: new THREE.AnimationMixer(fighter.group),
+        clips: {},
+        actions: {},
+        stateToClip: {},
+        currentState: null,
+        currentAction: null,
+      };
+    }
+
+    function registerFighterClip(fighter, clip) {
+      if (!fighter?.animation?.mixer || !clip) return;
+      const key = normalizeClipName(clip.name);
+      fighter.animation.clips[key] = clip;
+      fighter.animation.actions[key] = fighter.animation.mixer.clipAction(clip);
+    }
+
+    function remapAnimationStates(fighter) {
+      const keys = Object.keys(fighter.animation.actions);
+      for (const state of Object.values(FIGHTER_STATES)) {
+        const desired = normalizeClipName(state);
+        if (fighter.animation.actions[desired]) {
+          fighter.animation.stateToClip[state] = desired;
+          continue;
+        }
+        const aliases = MIXAMO_STATE_ALIASES[state] || [];
+        let found = null;
+        for (const alias of aliases) {
+          const a = normalizeClipName(alias);
+          found = keys.find(k => k === a || k.includes(a));
+          if (found) break;
+        }
+        if (!found && state === FIGHTER_STATES.WALK_BACK) {
+          found = fighter.animation.stateToClip[FIGHTER_STATES.WALK_FWD] || null;
+        }
+        if (!found && state !== FIGHTER_STATES.IDLE) {
+          found = fighter.animation.stateToClip[FIGHTER_STATES.IDLE] || null;
+        }
+        if (found) fighter.animation.stateToClip[state] = found;
+      }
+    }
+
+    function playFighterAnimation(fighter, state, fade = 0.12) {
+      if (!fighter?.animation) return;
+      const { actions, stateToClip } = fighter.animation;
+      const clipKey = stateToClip[state] || stateToClip[FIGHTER_STATES.IDLE];
+      if (!clipKey || !actions[clipKey]) return;
+
+      const next = actions[clipKey];
+      const prev = fighter.animation.currentAction;
+      if (prev === next && fighter.animation.currentState === state) return;
+
+      next.enabled = true;
+      next.reset();
+      if (LOOPING_ANIMATION_STATES.has(state)) {
+        next.setLoop(THREE.LoopRepeat, Infinity);
+        next.clampWhenFinished = false;
+      } else {
+        next.setLoop(THREE.LoopOnce, 1);
+        next.clampWhenFinished = true;
+      }
+
+      if (prev) prev.crossFadeTo(next, fade, true);
+      next.play();
+      fighter.animation.currentAction = next;
+      fighter.animation.currentState = state;
+    }
+
+    function setFighterState(fighter, nextState, opts = {}) {
+      if (!fighter?.combat) return;
+      const force = !!opts.force;
+      if (!force && fighter.combat.state === nextState) return;
+      fighter.combat.state = nextState;
+      fighter.combat.stateTime = 0;
+      fighter.blocking = nextState === FIGHTER_STATES.BLOCK;
+
+      if (isAttackState(nextState)) {
+        fighter.combat.attackType = nextState;
+        fighter.combat.attackResolved = false;
+      } else {
+        fighter.combat.attackType = null;
+        fighter.combat.attackResolved = false;
+        if (!isAttackState(nextState)) fighter.combat.queuedAttack = null;
+      }
+      playFighterAnimation(fighter, nextState);
+    }
+
+    function initializeFighterAnimationController(fighter) {
+      fighter.combat = createFighterCombatState();
+      fighter.animation = createFighterAnimationState(fighter);
+      remapAnimationStates(fighter);
+
+      const manifest = getManifestForCharacter(fighter.char.id);
+      for (const [state, url] of Object.entries(manifest)) {
+        if (!url) continue;
+        mixamoClipLoader.load(url, (clipGltf) => {
+          if (!clipGltf.animations || clipGltf.animations.length === 0) return;
+          const baseClip = clipGltf.animations[0];
+          const clip = baseClip.clone();
+          clip.name = normalizeClipName(state);
+          registerFighterClip(fighter, clip);
+          remapAnimationStates(fighter);
+          playFighterAnimation(fighter, fighter.combat.state, 0.05);
+        }, undefined, (err) => {
+          console.warn(`Failed to load Mixamo clip (${state}) for ${fighter.char.id}:`, err);
+        });
+      }
+
+      setFighterState(fighter, FIGHTER_STATES.IDLE, { force: true });
+    }
+
+    function queueAttack(fighter, attackType) {
+      if (!fighter || fighter.hp <= 0) return false;
+      if (!ATTACK_FRAME_DATA[attackType]) return false;
+      if (fighter.cooldown > 0 || fighter.stunned > 0) return false;
+      const s = fighter.combat.state;
+      if (
+        s === FIGHTER_STATES.IDLE
+        || s === FIGHTER_STATES.WALK_FWD
+        || s === FIGHTER_STATES.WALK_BACK
+        || s === FIGHTER_STATES.BLOCK
+      ) {
+        setFighterState(fighter, attackType, { force: true });
+        return true;
+      }
+      if (isAttackState(s)) {
+        const spec = ATTACK_FRAME_DATA[fighter.combat.attackType || s];
+        if (spec && fighter.combat.stateTime >= spec.cancelStart && fighter.combat.stateTime <= spec.cancelEnd) {
+          fighter.combat.queuedAttack = attackType;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function updateFighterStateMachine(fighter, opponent, dt, moveIntent, blockHeld) {
+      if (!fighter?.combat || fighter.hp <= 0) return;
+      fighter.combat.stateTime += dt;
+
+      const state = fighter.combat.state;
+      if (state === FIGHTER_STATES.KO || state === FIGHTER_STATES.VICTORY) return;
+
+      if (fighter.stunned > 0 && !isAttackState(state) && state !== FIGHTER_STATES.KNOCKDOWN) {
+        setFighterState(fighter, FIGHTER_STATES.HIT_REACT);
+        return;
+      }
+
+      if (isAttackState(state)) {
+        const spec = ATTACK_FRAME_DATA[fighter.combat.attackType];
+        if (!spec) {
+          setFighterState(fighter, FIGHTER_STATES.IDLE);
+          return;
+        }
+        if (!fighter.combat.attackResolved && fighter.combat.stateTime >= spec.activeStart) {
+          fighter.combat.attackResolved = true;
+          performAttack(fighter, opponent, fighter.combat.attackType);
+        }
+        if (fighter.combat.stateTime >= spec.recoveryEnd) {
+          const queued = fighter.combat.queuedAttack;
+          fighter.combat.queuedAttack = null;
+          if (queued && ATTACK_FRAME_DATA[queued]) {
+            setFighterState(fighter, queued, { force: true });
+          } else {
+            setFighterState(fighter, FIGHTER_STATES.IDLE);
+          }
+        }
+        return;
+      }
+
+      if (state === FIGHTER_STATES.HIT_REACT || state === FIGHTER_STATES.KNOCKDOWN) {
+        const recoverAt = STATE_RECOVERY_MS[state] || 300;
+        if (fighter.combat.stateTime >= recoverAt) {
+          setFighterState(fighter, FIGHTER_STATES.IDLE);
+        }
+        return;
+      }
+
+      if (blockHeld && fighter.cooldown <= 0 && fighter.stunned <= 0) {
+        setFighterState(fighter, FIGHTER_STATES.BLOCK);
+        return;
+      }
+      if (state === FIGHTER_STATES.BLOCK && !blockHeld) {
+        setFighterState(fighter, FIGHTER_STATES.IDLE);
+        return;
+      }
+
+      if (Math.abs(moveIntent) > 0.001) {
+        const facingDir = opponent.x >= fighter.x ? 1 : -1;
+        const moveState = Math.sign(moveIntent) === facingDir
+          ? FIGHTER_STATES.WALK_FWD
+          : FIGHTER_STATES.WALK_BACK;
+        setFighterState(fighter, moveState);
+      } else {
+        setFighterState(fighter, FIGHTER_STATES.IDLE);
+      }
+    }
+
+    function isAttackActiveFrame(fighter) {
+      if (!fighter?.combat || !isAttackState(fighter.combat.state)) return false;
+      const spec = ATTACK_FRAME_DATA[fighter.combat.attackType];
+      if (!spec) return false;
+      return fighter.combat.stateTime >= spec.activeStart && fighter.combat.stateTime <= spec.activeEnd;
+    }
+
+    // ===== PROCEDURAL ANIMATION FALLBACK =====
+    // Drives visible motion via group transforms when no Mixamo clips are loaded.
+    function hasRealClips(fighter) {
+      return fighter.animation
+        && Object.keys(fighter.animation.stateToClip).length > 0
+        && fighter.animation.currentAction;
+    }
+
+    function updateProceduralAnimation(fighter, dt) {
+      if (hasRealClips(fighter)) return; // real clips take over
+      if (!fighter?.combat) return;
+      const state = fighter.combat.state;
+      const t = fighter.combat.stateTime; // ms elapsed in current state
+      const g = fighter.group;
+      const by = fighter.baseY || 0;
+      const now = Date.now();
+
+      // Reset to neutral every frame — state block sets deltas
+      g.rotation.x = 0;
+      g.rotation.z = 0;
+      g.position.y = by;
+
+      switch (state) {
+        // --- IDLE: gentle breathing bob ---
+        case FIGHTER_STATES.IDLE: {
+          g.position.y = by + Math.sin(now * 0.003) * 0.015;
+          break;
+        }
+        // --- WALK FORWARD: rhythmic bob + tilt ---
+        case FIGHTER_STATES.WALK_FWD: {
+          g.position.y = by + Math.sin(now * 0.01) * 0.02;
+          g.rotation.z = Math.sin(now * 0.01) * 0.03;
+          g.rotation.x = -0.04; // slight forward lean
+          break;
+        }
+        // --- WALK BACKWARD: cautious lean ---
+        case FIGHTER_STATES.WALK_BACK: {
+          g.position.y = by + Math.sin(now * 0.008) * 0.015;
+          g.rotation.x = 0.06;
+          break;
+        }
+        // --- PUNCH ---
+        case FIGHTER_STATES.PUNCH: {
+          const sp = ATTACK_FRAME_DATA.punch;
+          if (t < sp.activeStart) {
+            const w = t / sp.activeStart;
+            g.rotation.x = w * 0.08;
+            g.position.y = by - w * 0.02;
+          } else if (t <= sp.activeEnd) {
+            const a = (t - sp.activeStart) / (sp.activeEnd - sp.activeStart);
+            g.rotation.x = -0.15 * (1 - a * 0.5);
+            g.position.y = by + 0.03;
+          } else {
+            const r = Math.min(1, (t - sp.activeEnd) / (sp.recoveryEnd - sp.activeEnd));
+            g.rotation.x = -0.15 * (1 - r);
+            g.position.y = by + 0.03 * (1 - r);
+          }
+          break;
+        }
+        // --- KICK ---
+        case FIGHTER_STATES.KICK: {
+          const sp = ATTACK_FRAME_DATA.kick;
+          if (t < sp.activeStart) {
+            const w = t / sp.activeStart;
+            g.rotation.x = w * 0.06;
+            g.position.y = by + w * 0.04;
+          } else if (t <= sp.activeEnd) {
+            const a = (t - sp.activeStart) / (sp.activeEnd - sp.activeStart);
+            g.rotation.x = -0.12;
+            g.rotation.z = -0.08 * a;
+            g.position.y = by + 0.06;
+          } else {
+            const r = Math.min(1, (t - sp.activeEnd) / (sp.recoveryEnd - sp.activeEnd));
+            g.rotation.x = -0.12 * (1 - r);
+            g.rotation.z = -0.08 * (1 - r);
+            g.position.y = by + 0.06 * (1 - r);
+          }
+          break;
+        }
+        // --- SPECIAL ---
+        case FIGHTER_STATES.SPECIAL: {
+          const sp = ATTACK_FRAME_DATA.special;
+          if (t < sp.activeStart) {
+            const w = t / sp.activeStart;
+            g.rotation.x = w * 0.1;
+            g.position.y = by + w * 0.05;
+            g.rotation.z = Math.sin(w * Math.PI * 2) * 0.04;
+          } else if (t <= sp.activeEnd) {
+            g.rotation.x = -0.2;
+            g.position.y = by + 0.08;
+            g.rotation.z = Math.sin(t * 0.02) * 0.06;
+          } else {
+            const r = Math.min(1, (t - sp.activeEnd) / (sp.recoveryEnd - sp.activeEnd));
+            g.rotation.x = -0.2 * (1 - r);
+            g.position.y = by + 0.08 * (1 - r);
+          }
+          break;
+        }
+        // --- BLOCK: crouch + lean back ---
+        case FIGHTER_STATES.BLOCK: {
+          const ease = Math.min(1, t / 100);
+          g.position.y = by - 0.06 * ease;
+          g.rotation.x = 0.1 * ease;
+          break;
+        }
+        // --- HIT REACT: snap back then recover ---
+        case FIGHTER_STATES.HIT_REACT: {
+          const dur = STATE_RECOVERY_MS.hit_react;
+          const p = Math.min(1, t / dur);
+          if (p < 0.3) {
+            const s = p / 0.3;
+            g.rotation.x = s * 0.2;
+            g.position.y = by + s * 0.04;
+            g.rotation.z = Math.sin(s * Math.PI * 4) * 0.05;
+          } else {
+            const s = (p - 0.3) / 0.7;
+            g.rotation.x = 0.2 * (1 - s);
+            g.position.y = by + 0.04 * (1 - s);
+            g.rotation.z = Math.sin(s * Math.PI) * 0.02 * (1 - s);
+          }
+          break;
+        }
+        // --- KNOCKDOWN: fall then get up ---
+        case FIGHTER_STATES.KNOCKDOWN: {
+          const dur = STATE_RECOVERY_MS.knockdown;
+          const p = Math.min(1, t / dur);
+          if (p < 0.4) {
+            const s = p / 0.4;
+            g.rotation.x = s * 1.2;
+            g.position.y = by + 0.1 * (1 - s);
+          } else if (p < 0.7) {
+            g.rotation.x = 1.2;
+            g.position.y = by - 0.1;
+          } else {
+            const s = (p - 0.7) / 0.3;
+            g.rotation.x = 1.2 * (1 - s);
+            g.position.y = by - 0.1 * (1 - s);
+          }
+          break;
+        }
+        // --- KO: fall and stay down ---
+        case FIGHTER_STATES.KO: {
+          const p = Math.min(1, t / 600);
+          g.rotation.x = p * 1.5;
+          g.position.y = by - p * 0.15;
+          break;
+        }
+        // --- VICTORY: celebratory bounce ---
+        case FIGHTER_STATES.VICTORY: {
+          const bounce = Math.abs(Math.sin(t * 0.005)) * 0.1;
+          g.position.y = by + bounce;
+          g.rotation.z = Math.sin(t * 0.003) * 0.05;
+          break;
+        }
+      }
+    }
+
     // Build a body collider Box3 for a fighter at their current position.
     // Uses actual measured character dimensions, not hardcoded.
     function getBodyCollider(fighter) {
@@ -941,9 +1416,9 @@
 
       gameState = {
         p1: { group: p1Group, char: p1Char, hp: 100, maxHp: 100, x: -1.8, combo: 0, lastHit: 0, blocking: false, cooldown: 0, stunned: 0,
-               bounds: characterBounds[selectedP1] },
+               bounds: characterBounds[selectedP1], baseY: p1Group.position.y },
         p2: { group: p2Group, char: p2Char, hp: 100, maxHp: 100, x: 1.8, combo: 0, lastHit: 0, blocking: false, cooldown: 0, stunned: 0, ai: true,
-               bounds: characterBounds[selectedP2] },
+               bounds: characterBounds[selectedP2], baseY: p2Group.position.y },
         timer: 99,
         round: 1,
         lastTimerTick: Date.now(),
@@ -951,6 +1426,10 @@
       };
 
       updateHealthBars();
+
+      // Initialize combat state machine + animation controller for both fighters
+      initializeFighterAnimationController(gameState.p1);
+      initializeFighterAnimationController(gameState.p2);
     }
 
     function buildFighterGroup(charId) {
@@ -1107,10 +1586,23 @@
       defender.hp = Math.max(0, defender.hp - finalDmg);
       attacker.cooldown = cooldown;
 
-      // Visual feedback - bob the model
-      const origY = defender.group.position.y;
-      defender.group.position.y = origY + 0.05;
-      setTimeout(() => { if (defender.group) defender.group.position.y = origY; }, 100);
+      // Visual feedback — push into hit_react or knockdown via state machine
+      if (defender.combat) {
+        if (defender.hp <= 0) {
+          setFighterState(defender, FIGHTER_STATES.KO, { force: true });
+        } else if (attackType === 'special' && !defender.blocking) {
+          setFighterState(defender, FIGHTER_STATES.KNOCKDOWN, { force: true });
+        } else if (!defender.blocking) {
+          setFighterState(defender, FIGHTER_STATES.HIT_REACT, { force: true });
+        }
+      }
+
+      // Legacy bob fallback if no animation clips loaded yet
+      if (!defender.animation?.currentAction) {
+        const origY = defender.group.position.y;
+        defender.group.position.y = origY + 0.05;
+        setTimeout(() => { if (defender.group) defender.group.position.y = origY; }, 100);
+      }
 
       const isP1Target = defender === gameState.p1;
       showDamage(finalDmg, isP1Target);
@@ -1144,39 +1636,58 @@
 
       const dist = Math.abs(ai.x - player.x);
 
-      // Movement
-      const moveSpeed = 1.5 * (ai.char.spd / 10);
-      if (dist > 1.2) {
-        ai.x += (player.x > ai.x ? 1 : -1) * moveSpeed * dt / 1000;
-      } else if (dist < 0.6) {
-        ai.x += (player.x > ai.x ? -1 : 1) * moveSpeed * 0.5 * dt / 1000;
+      // AI movement intent
+      let aiMoveIntent = 0;
+      const aiLocked = isAttackState(ai.combat?.state)
+        || ai.combat?.state === FIGHTER_STATES.HIT_REACT
+        || ai.combat?.state === FIGHTER_STATES.KNOCKDOWN
+        || ai.combat?.state === FIGHTER_STATES.KO;
+      if (!aiLocked) {
+        const moveSpeed = 1.5 * (ai.char.spd / 10);
+        if (dist > 1.2) {
+          aiMoveIntent = player.x > ai.x ? 1 : -1;
+          ai.x += aiMoveIntent * moveSpeed * dt / 1000;
+        } else if (dist < 0.6) {
+          aiMoveIntent = player.x > ai.x ? -1 : 1;
+          ai.x += aiMoveIntent * moveSpeed * 0.5 * dt / 1000;
+        }
+        ai.x = Math.max(-3.5, Math.min(3.5, ai.x));
+        ai.group.position.x = ai.x;
       }
-      ai.x = Math.max(-3.5, Math.min(3.5, ai.x));
-      ai.group.position.x = ai.x;
 
       // Face player
       ai.group.rotation.y = player.x < ai.x ? 0 : Math.PI;
 
-      // Attack
-      if (dist < 1.5 && ai.cooldown <= 0 && ai.stunned <= 0) {
+      // AI decide to block or attack
+      let aiBlock = false;
+      if (dist < 1.5 && ai.cooldown <= 0 && ai.stunned <= 0 && !aiLocked) {
         const roll = Math.random();
         if (roll < 0.15) {
-          ai.blocking = true;
-          setTimeout(() => { ai.blocking = false; }, 500 + Math.random() * 500);
+          aiBlock = true;
         } else if (roll < 0.5) {
-          performAttack(ai, player, 'punch');
+          queueAttack(ai, 'punch');
         } else if (roll < 0.8) {
-          performAttack(ai, player, 'kick');
+          queueAttack(ai, 'kick');
         } else {
-          performAttack(ai, player, 'special');
+          queueAttack(ai, 'special');
         }
       }
+
+      // Update AI state machine
+      updateFighterStateMachine(ai, player, dt, aiMoveIntent, aiBlock);
     }
 
     // ===== ROUND LOGIC =====
     function endRound(winner) {
       gameState.paused = true;
       battleActive = false;
+
+      // Set winner/loser animation states
+      const winFighter = winner === 'p1' ? gameState.p1 : gameState.p2;
+      const loseFighter = winner === 'p1' ? gameState.p2 : gameState.p1;
+      if (winFighter.combat) setFighterState(winFighter, FIGHTER_STATES.VICTORY, { force: true });
+      if (loseFighter.combat) setFighterState(loseFighter, FIGHTER_STATES.KO, { force: true });
+
       setTimeout(() => {
         const overlay = document.getElementById('ko-overlay');
         const winnerChar = winner === 'p1' ? gameState.p1.char : gameState.p2.char;
@@ -1232,25 +1743,29 @@
         gameState.p1.cooldown = Math.max(0, gameState.p1.cooldown - dt);
         gameState.p1.stunned = Math.max(0, gameState.p1.stunned - dt);
 
-        // Player input
+        // Player input — compute move intent
         const p1 = gameState.p1;
         const moveSpeed = 2.5 * (p1.char.spd / 10);
-        if (keys['KeyA'] || keys['ArrowLeft']) {
-          p1.x = Math.max(-3.5, p1.x - moveSpeed * dt / 1000);
-          p1.group.rotation.y = Math.PI;
-        }
-        if (keys['KeyD'] || keys['ArrowRight']) {
-          p1.x = Math.min(3.5, p1.x + moveSpeed * dt / 1000);
-          p1.group.rotation.y = 0;
+        let p1MoveIntent = 0;
+        if (keys['KeyA'] || keys['ArrowLeft']) p1MoveIntent -= 1;
+        if (keys['KeyD'] || keys['ArrowRight']) p1MoveIntent += 1;
+
+        // Only allow movement in non-locked states
+        const p1Locked = isAttackState(p1.combat?.state)
+          || p1.combat?.state === FIGHTER_STATES.HIT_REACT
+          || p1.combat?.state === FIGHTER_STATES.KNOCKDOWN
+          || p1.combat?.state === FIGHTER_STATES.KO;
+        if (!p1Locked && p1MoveIntent !== 0) {
+          p1.x += p1MoveIntent * moveSpeed * dt / 1000;
+          p1.x = Math.max(-3.5, Math.min(3.5, p1.x));
         }
         p1.group.position.x = p1.x;
 
         // Face opponent
-        if (!keys['KeyA'] && !keys['ArrowLeft'] && !keys['KeyD'] && !keys['ArrowRight']) {
-          p1.group.rotation.y = gameState.p2.x > p1.x ? 0 : Math.PI;
-        }
+        p1.group.rotation.y = gameState.p2.x > p1.x ? 0 : Math.PI;
 
-        p1.blocking = keys['Space'];
+        // Update state machines (state machine drives blocking, not raw key)
+        updateFighterStateMachine(p1, gameState.p2, dt, p1MoveIntent, !!keys['Space']);
 
         // AI
         updateAI(dt);
@@ -1262,6 +1777,14 @@
         if (debugColliders) drawDebugColliders();
 
         updateHealthBars();
+      }
+
+      // Always update animations (even when paused — KO / victory still animate)
+      if (gameState) {
+        updateProceduralAnimation(gameState.p1, dt);
+        updateProceduralAnimation(gameState.p2, dt);
+        if (gameState.p1.animation?.mixer) gameState.p1.animation.mixer.update(dt / 1000);
+        if (gameState.p2.animation?.mixer) gameState.p2.animation.mixer.update(dt / 1000);
       }
 
       if (battleRenderer && battleScene && battleCamera) {
@@ -1284,9 +1807,9 @@
       const p1 = gameState.p1;
       const p2 = gameState.p2;
 
-      if (e.code === 'KeyJ') performAttack(p1, p2, 'punch');
-      if (e.code === 'KeyK') performAttack(p1, p2, 'kick');
-      if (e.code === 'KeyL') performAttack(p1, p2, 'special');
+      if (e.code === 'KeyJ') queueAttack(p1, 'punch');
+      if (e.code === 'KeyK') queueAttack(p1, 'kick');
+      if (e.code === 'KeyL') queueAttack(p1, 'special');
       if (e.code === 'Escape') backToSelect();
     });
 
