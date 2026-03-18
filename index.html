@@ -398,6 +398,97 @@
     }
     .debug-state-overlay .ds-p1 { color: var(--gold); }
     .debug-state-overlay .ds-p2 { color: var(--blue-bright); }
+
+    /* Controller Status */
+    .controller-badge {
+      position: fixed; top: 1rem; right: 1rem;
+      z-index: 760; pointer-events: none;
+      font-family: 'IM Fell English SC', serif; font-size: 0.75rem;
+      padding: 0.3rem 0.8rem; border-radius: 3px;
+      background: rgba(14,17,27,0.85); border: 1px solid var(--bg-accent);
+      color: var(--fg-muted); opacity: 0;
+      transition: opacity 0.4s, border-color 0.3s, color 0.3s;
+    }
+    .controller-badge.visible { opacity: 1; }
+    .controller-badge.connected { border-color: var(--green-bright); color: var(--green-bright); }
+    .controller-badge.disconnected { border-color: var(--red-bright); color: var(--red-bright); }
+
+    /* Settings Overlay */
+    #settings-overlay {
+      position: fixed; inset: 0; z-index: 900;
+      background: rgba(10,13,21,0.95);
+      display: none; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      padding: 2rem; overflow-y: auto;
+    }
+    #settings-overlay.active { display: flex; }
+    .settings-title {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 2rem; color: var(--gold);
+      text-shadow: 0 0 20px rgba(238,183,43,0.3);
+      margin-bottom: 1.5rem;
+    }
+    .settings-section {
+      width: 100%; max-width: 560px; margin-bottom: 1.5rem;
+    }
+    .settings-section h3 {
+      font-family: 'Cinzel', serif; font-size: 1rem;
+      color: var(--gold-mid); margin-bottom: 0.5rem;
+      border-bottom: 1px solid var(--gold-dark); padding-bottom: 0.3rem;
+    }
+    .bind-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.5rem 0.6rem; margin-bottom: 0.3rem;
+      background: var(--bg-mid); border: 1px solid var(--bg-accent);
+      border-radius: 3px; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .bind-row:hover { border-color: var(--gold-dark); background: var(--bg-accent); }
+    .bind-row.listening {
+      border-color: var(--gold); background: rgba(238,183,43,0.1);
+      animation: pulse-border 1s infinite;
+    }
+    @keyframes pulse-border {
+      0%, 100% { border-color: var(--gold); }
+      50% { border-color: var(--gold-dark); }
+    }
+    .bind-action {
+      font-family: 'Spectral SC', serif; font-size: 0.85rem; color: var(--fg);
+      min-width: 100px;
+    }
+    .bind-keys {
+      display: flex; gap: 0.5rem; align-items: center;
+    }
+    .bind-key {
+      font-family: 'Spectral SC', serif; font-size: 0.75rem;
+      background: var(--bg-darkest); border: 1px solid var(--gold-dark);
+      padding: 0.2rem 0.5rem; border-radius: 3px; color: var(--gold-mid);
+    }
+    .bind-gp {
+      font-family: 'Spectral SC', serif; font-size: 0.75rem;
+      background: #1a2040; border: 1px solid #2a4080;
+      padding: 0.2rem 0.5rem; border-radius: 3px; color: #6090dd;
+    }
+    .bind-hint {
+      font-family: 'IM Fell English SC', serif; font-size: 0.7rem;
+      color: var(--fg-muted); font-style: italic;
+    }
+    .settings-actions {
+      display: flex; gap: 1rem; margin-top: 1rem;
+    }
+    .settings-btn {
+      font-family: 'Cinzel', serif; font-size: 0.9rem;
+      padding: 0.5rem 1.5rem; cursor: pointer;
+      border: 1px solid var(--gold-dark); background: var(--bg-mid);
+      color: var(--gold-mid); transition: all 0.2s; border-radius: 3px;
+    }
+    .settings-btn:hover {
+      background: var(--bg-accent); border-color: var(--gold); color: var(--gold);
+    }
+    .settings-btn.primary {
+      background: linear-gradient(180deg, rgba(238,183,43,0.15), rgba(122,96,31,0.25));
+      border-color: var(--gold); color: var(--gold);
+    }
   </style>
 </head>
 <body>
@@ -419,6 +510,7 @@
     <div class="studio-badge">GRUDGE STUDIO</div>
     <button class="menu-btn" id="btn-fight" onclick="showCharSelect()">Enter the Arena</button>
     <button class="menu-btn" id="btn-viewer" onclick="showViewer()">Character Viewer</button>
+    <button class="menu-btn" id="btn-settings" onclick="showSettings()">Settings</button>
   </div>
 
   <!-- CHARACTER SELECT -->
@@ -469,21 +561,7 @@
       <div><span class="ds-label">P1</span> <span class="ds-p1" id="ds-p1">idle</span></div>
       <div><span class="ds-label">P2</span> <span class="ds-p2" id="ds-p2">idle</span></div>
     </div>
-    <div class="controls-hud" id="battle-controls">
-      <span class="key-badge">W</span><span class="key-badge">A</span><span class="key-badge">S</span><span class="key-badge">D</span> Move
-      &nbsp;&nbsp;
-      <span class="key-badge">J</span> Punch
-      &nbsp;&nbsp;
-      <span class="key-badge">K</span> Kick
-      &nbsp;&nbsp;
-      <span class="key-badge">L</span> Special
-      &nbsp;&nbsp;
-      <span class="key-badge">Space</span> Block
-      &nbsp;&nbsp;
-      <span class="key-badge">Esc</span> Menu
-      &nbsp;&nbsp;
-      <span class="key-badge">`</span> Debug
-    </div>
+    <div class="controls-hud" id="battle-controls"></div>
   </div>
 
   <!-- Battle Overlays -->
@@ -494,6 +572,26 @@
     <div class="ko-text">K.O.!</div>
     <div class="winner-text" id="winner-text"></div>
     <button class="menu-btn" style="margin-top:2rem" onclick="backToSelect()">Continue</button>
+  </div>
+
+  <!-- Controller Badge -->
+  <div class="controller-badge" id="controller-badge">No Controller</div>
+
+  <!-- Settings Overlay -->
+  <div id="settings-overlay">
+    <div class="settings-title">Settings</div>
+    <div class="settings-section">
+      <h3>Keyboard Bindings</h3>
+      <div id="kb-binds"></div>
+    </div>
+    <div class="settings-section">
+      <h3>Gamepad Bindings (PS5 / Xbox / Generic)</h3>
+      <div id="gp-binds"></div>
+    </div>
+    <div class="settings-actions">
+      <button class="settings-btn" onclick="resetBindings()">Reset Defaults</button>
+      <button class="settings-btn primary" onclick="closeSettings()">Done</button>
+    </div>
   </div>
 
   <div class="gs-watermark">GRUDGE STUDIO</div>
@@ -546,6 +644,281 @@
     let vfxParticles = [];
     let screenShake = 0;
     const CAM_BASE = new THREE.Vector3(0, 2, 6);
+
+    // ===== GAMEPAD / CONTROLLER SYSTEM =====
+    const GP_BUTTON_NAMES = [
+      'Cross/A',   // 0
+      'Circle/B',  // 1
+      'Square/X',  // 2
+      'Triangle/Y',// 3
+      'L1/LB',     // 4
+      'R1/RB',     // 5
+      'L2/LT',     // 6
+      'R2/RT',     // 7
+      'Share',     // 8
+      'Options',   // 9
+      'L3',        // 10
+      'R3',        // 11
+      'D-Up',      // 12
+      'D-Down',    // 13
+      'D-Left',    // 14
+      'D-Right',   // 15
+      'PS/Guide',  // 16
+    ];
+
+    const INPUT_ACTIONS = [
+      'move_left', 'move_right', 'punch', 'kick', 'special', 'block', 'menu', 'debug',
+    ];
+
+    const ACTION_LABELS = {
+      move_left: 'Move Left', move_right: 'Move Right',
+      punch: 'Punch', kick: 'Kick', special: 'Special',
+      block: 'Block', menu: 'Menu / Pause', debug: 'Debug',
+    };
+
+    const DEFAULT_KB_BINDS = {
+      move_left: 'KeyA', move_right: 'KeyD',
+      punch: 'KeyJ', kick: 'KeyK', special: 'KeyL',
+      block: 'Space', menu: 'Escape', debug: 'Backquote',
+    };
+
+    // PS5 DualSense default: Square=punch, Circle=kick, Triangle=special, L1=block
+    const DEFAULT_GP_BINDS = {
+      punch: 2,    // Square / X
+      kick: 1,     // Circle / B
+      special: 3,  // Triangle / Y
+      block: 4,    // L1 / LB
+      menu: 9,     // Options / Start
+      debug: 8,    // Share / Back
+    };
+
+    const STICK_DEADZONE = 0.25;
+
+    let kbBinds = { ...DEFAULT_KB_BINDS };
+    let gpBinds = { ...DEFAULT_GP_BINDS };
+    let gpConnected = false;
+    let gpIndex = -1;
+    let gpPrev = new Array(17).fill(false);
+    let gpDown = new Array(17).fill(false); // true only on first frame pressed
+    let gpHeld = new Array(17).fill(false);
+    let gpStickX = 0;
+    let gpStickY = 0;
+    let settingsOpen = false;
+    let rebindTarget = null; // { type: 'kb'|'gp', action: string }
+
+    function loadBindings() {
+      try {
+        const saved = localStorage.getItem('ff_bindings');
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data.kb) Object.assign(kbBinds, data.kb);
+          if (data.gp) Object.assign(gpBinds, data.gp);
+        }
+      } catch (_) { /* ignore corrupt data */ }
+    }
+
+    function saveBindings() {
+      try {
+        localStorage.setItem('ff_bindings', JSON.stringify({ kb: kbBinds, gp: gpBinds }));
+      } catch (_) { /* quota exceeded */ }
+    }
+
+    function gpButtonName(idx) {
+      return GP_BUTTON_NAMES[idx] || `Btn${idx}`;
+    }
+
+    function keyCodeLabel(code) {
+      if (!code) return '—';
+      return code
+        .replace('Key', '')
+        .replace('Arrow', '↑↓←→'.includes(code.replace('Arrow', '')) ? '' : '→')
+        .replace('ArrowLeft', '←').replace('ArrowRight', '→')
+        .replace('ArrowUp', '↑').replace('ArrowDown', '↓')
+        .replace('Space', 'Space').replace('Backquote', '`')
+        .replace('Escape', 'Esc');
+    }
+
+    // --- Gamepad connection events ---
+    window.addEventListener('gamepadconnected', (e) => {
+      gpConnected = true;
+      gpIndex = e.gamepad.index;
+      const badge = document.getElementById('controller-badge');
+      badge.textContent = e.gamepad.id.split('(')[0].trim() || 'Controller';
+      badge.className = 'controller-badge visible connected';
+      setTimeout(() => { badge.classList.remove('visible'); }, 3000);
+      updateControlsHUD();
+    });
+
+    window.addEventListener('gamepaddisconnected', () => {
+      gpConnected = false;
+      gpIndex = -1;
+      const badge = document.getElementById('controller-badge');
+      badge.textContent = 'Controller Disconnected';
+      badge.className = 'controller-badge visible disconnected';
+      setTimeout(() => { badge.classList.remove('visible'); }, 3000);
+      updateControlsHUD();
+    });
+
+    // --- Poll gamepad state each frame ---
+    function pollGamepad() {
+      if (!gpConnected) return;
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      const gp = gamepads[gpIndex];
+      if (!gp) return;
+
+      // Buttons
+      for (let i = 0; i < Math.min(gp.buttons.length, 17); i++) {
+        const pressed = gp.buttons[i].pressed;
+        gpDown[i] = pressed && !gpPrev[i];
+        gpHeld[i] = pressed;
+        gpPrev[i] = pressed;
+      }
+
+      // Left stick (axes 0/1)
+      gpStickX = Math.abs(gp.axes[0]) > STICK_DEADZONE ? gp.axes[0] : 0;
+      gpStickY = Math.abs(gp.axes[1]) > STICK_DEADZONE ? gp.axes[1] : 0;
+    }
+
+    function gpActionDown(action) {
+      const btn = gpBinds[action];
+      return btn !== undefined && gpDown[btn];
+    }
+
+    function gpActionHeld(action) {
+      const btn = gpBinds[action];
+      return btn !== undefined && gpHeld[btn];
+    }
+
+    function gpMoveX() {
+      // Combine D-pad + stick
+      let x = gpStickX;
+      if (gpHeld[14]) x = -1; // D-Left
+      if (gpHeld[15]) x = 1;  // D-Right
+      return x;
+    }
+
+    function gpAnyButtonDown() {
+      for (let i = 0; i < 17; i++) {
+        if (gpDown[i]) return i;
+      }
+      return -1;
+    }
+
+    // --- Controls HUD (updates dynamically based on bindings + controller) ---
+    function updateControlsHUD() {
+      const el = document.getElementById('battle-controls');
+      if (!el) return;
+      const kb = (action) => `<span class="key-badge">${keyCodeLabel(kbBinds[action])}</span>`;
+      const gp_b = (action) => gpBinds[action] !== undefined
+        ? `<span class="key-badge" style="border-color:#2a4080;color:#6090dd">${gpButtonName(gpBinds[action])}</span>` : '';
+      const sep = '&nbsp;&nbsp;';
+      let html = `${kb('move_left')} ${kb('move_right')} Move${sep}`;
+      html += `${kb('punch')}${gp_b('punch')} Punch${sep}`;
+      html += `${kb('kick')}${gp_b('kick')} Kick${sep}`;
+      html += `${kb('special')}${gp_b('special')} Special${sep}`;
+      html += `${kb('block')}${gp_b('block')} Block${sep}`;
+      html += `${kb('menu')} Menu${sep}${kb('debug')} Debug`;
+      el.innerHTML = html;
+    }
+
+    // --- Settings UI ---
+    function buildSettingsUI() {
+      const kbEl = document.getElementById('kb-binds');
+      const gpEl = document.getElementById('gp-binds');
+      if (!kbEl || !gpEl) return;
+
+      kbEl.innerHTML = '';
+      for (const action of INPUT_ACTIONS) {
+        const row = document.createElement('div');
+        row.className = 'bind-row';
+        row.dataset.action = action;
+        row.dataset.type = 'kb';
+        row.innerHTML = `
+          <span class="bind-action">${ACTION_LABELS[action]}</span>
+          <div class="bind-keys">
+            <span class="bind-key">${keyCodeLabel(kbBinds[action])}</span>
+            <span class="bind-hint">click to rebind</span>
+          </div>`;
+        row.addEventListener('click', () => startRebind('kb', action, row));
+        kbEl.appendChild(row);
+      }
+
+      gpEl.innerHTML = '';
+      const gpActions = INPUT_ACTIONS.filter(a => a !== 'move_left' && a !== 'move_right');
+      for (const action of gpActions) {
+        const row = document.createElement('div');
+        row.className = 'bind-row';
+        row.dataset.action = action;
+        row.dataset.type = 'gp';
+        const val = gpBinds[action];
+        row.innerHTML = `
+          <span class="bind-action">${ACTION_LABELS[action]}</span>
+          <div class="bind-keys">
+            <span class="bind-gp">${val !== undefined ? gpButtonName(val) : '—'}</span>
+            <span class="bind-hint">click to rebind</span>
+          </div>`;
+        row.addEventListener('click', () => startRebind('gp', action, row));
+        gpEl.appendChild(row);
+      }
+
+      // D-pad / stick info
+      const note = document.createElement('div');
+      note.style.cssText = 'font-size:0.7rem;color:#a8a18a;margin-top:0.5rem;font-style:italic;';
+      note.textContent = 'Movement: Left Stick + D-Pad (not rebindable)';
+      gpEl.appendChild(note);
+    }
+
+    function startRebind(type, action, rowEl) {
+      // Cancel previous
+      document.querySelectorAll('.bind-row.listening').forEach(r => r.classList.remove('listening'));
+      rebindTarget = { type, action };
+      rowEl.classList.add('listening');
+      rowEl.querySelector('.bind-hint').textContent = type === 'kb' ? 'press a key…' : 'press a button…';
+    }
+
+    function finishRebind(type, action, value) {
+      if (type === 'kb') {
+        kbBinds[action] = value;
+      } else {
+        gpBinds[action] = value;
+      }
+      rebindTarget = null;
+      saveBindings();
+      buildSettingsUI();
+      updateControlsHUD();
+    }
+
+    // Listen for keyboard rebind
+    document.addEventListener('keydown', (e) => {
+      if (rebindTarget && rebindTarget.type === 'kb') {
+        e.preventDefault();
+        finishRebind('kb', rebindTarget.action, e.code);
+        return;
+      }
+    }, true); // capture phase so it fires before game input
+
+    window.showSettings = function() {
+      settingsOpen = true;
+      buildSettingsUI();
+      document.getElementById('settings-overlay').classList.add('active');
+    };
+
+    window.closeSettings = function() {
+      settingsOpen = false;
+      rebindTarget = null;
+      document.querySelectorAll('.bind-row.listening').forEach(r => r.classList.remove('listening'));
+      document.getElementById('settings-overlay').classList.remove('active');
+    };
+
+    window.resetBindings = function() {
+      kbBinds = { ...DEFAULT_KB_BINDS };
+      gpBinds = { ...DEFAULT_GP_BINDS };
+      saveBindings();
+      buildSettingsUI();
+      updateControlsHUD();
+    };
+
+    loadBindings();
 
     // ===== COLLIDER SYSTEM (Three.js Box3) =====
     // Attack reach defines the hitbox that extends from the attacker's body edge.
@@ -1841,6 +2214,23 @@
       const dt = lastFrameTime ? Math.min(timestamp - lastFrameTime, 50) : 16;
       lastFrameTime = timestamp;
 
+      // Poll gamepad every frame
+      pollGamepad();
+
+      // Gamepad rebind: if settings are open and we're waiting for a GP button
+      if (settingsOpen && rebindTarget && rebindTarget.type === 'gp') {
+        const btn = gpAnyButtonDown();
+        if (btn >= 0) finishRebind('gp', rebindTarget.action, btn);
+      }
+
+      // Gamepad menu/debug in battle
+      if (gpActionDown('menu') && battleActive && gameState && !gameState.paused) backToSelect();
+      if (gpActionDown('debug')) {
+        debugColliders = !debugColliders;
+        if (!debugColliders) clearDebugHelpers();
+        document.getElementById('debug-state-overlay').classList.toggle('active', debugColliders);
+      }
+
       if (!battleActive && !gameState?.paused) {
         if (battleRenderer) battleRenderer.render(battleScene, battleCamera);
         requestAnimationFrame(battleLoop);
@@ -1863,12 +2253,15 @@
         gameState.p1.cooldown = Math.max(0, gameState.p1.cooldown - dt);
         gameState.p1.stunned = Math.max(0, gameState.p1.stunned - dt);
 
-        // Player input — compute move intent
+        // Player input — compute move intent (keyboard + gamepad)
         const p1 = gameState.p1;
         const moveSpeed = 2.5 * (p1.char.spd / 10);
         let p1MoveIntent = 0;
-        if (keys['KeyA'] || keys['ArrowLeft']) p1MoveIntent -= 1;
-        if (keys['KeyD'] || keys['ArrowRight']) p1MoveIntent += 1;
+        if (keys[kbBinds.move_left] || keys['ArrowLeft']) p1MoveIntent -= 1;
+        if (keys[kbBinds.move_right] || keys['ArrowRight']) p1MoveIntent += 1;
+        // Gamepad stick/dpad
+        const gpX = gpMoveX();
+        if (Math.abs(gpX) > 0.01) p1MoveIntent = gpX;
 
         // Only allow movement in non-locked states
         const p1Locked = isAttackState(p1.combat?.state)
@@ -1884,8 +2277,16 @@
         // Face opponent
         p1.group.rotation.y = gameState.p2.x > p1.x ? 0 : Math.PI;
 
+        // Gamepad attack buttons (checked once per frame after pollGamepad)
+        if (gpActionDown('punch')) queueAttack(p1, 'punch');
+        if (gpActionDown('kick')) queueAttack(p1, 'kick');
+        if (gpActionDown('special')) queueAttack(p1, 'special');
+
+        // Block: keyboard OR gamepad held
+        const blockHeld = !!keys[kbBinds.block] || gpActionHeld('block');
+
         // Update state machines (state machine drives blocking, not raw key)
-        updateFighterStateMachine(p1, gameState.p2, dt, p1MoveIntent, !!keys['Space']);
+        updateFighterStateMachine(p1, gameState.p2, dt, p1MoveIntent, blockHeld);
 
         // AI
         updateAI(dt);
@@ -1923,10 +2324,13 @@
 
     // ===== INPUT =====
     document.addEventListener('keydown', (e) => {
+      // Skip if rebind is capturing (handled in capture-phase listener above)
+      if (settingsOpen && rebindTarget && rebindTarget.type === 'kb') return;
+
       keys[e.code] = true;
 
-      // Toggle debug colliders + state overlay with backtick
-      if (e.code === 'Backquote') {
+      // Toggle debug colliders + state overlay
+      if (e.code === kbBinds.debug) {
         debugColliders = !debugColliders;
         if (!debugColliders) clearDebugHelpers();
         document.getElementById('debug-state-overlay').classList.toggle('active', debugColliders);
@@ -1934,12 +2338,11 @@
 
       if (!battleActive || !gameState || gameState.paused) return;
       const p1 = gameState.p1;
-      const p2 = gameState.p2;
 
-      if (e.code === 'KeyJ') queueAttack(p1, 'punch');
-      if (e.code === 'KeyK') queueAttack(p1, 'kick');
-      if (e.code === 'KeyL') queueAttack(p1, 'special');
-      if (e.code === 'Escape') backToSelect();
+      if (e.code === kbBinds.punch) queueAttack(p1, 'punch');
+      if (e.code === kbBinds.kick) queueAttack(p1, 'kick');
+      if (e.code === kbBinds.special) queueAttack(p1, 'special');
+      if (e.code === kbBinds.menu) backToSelect();
     });
 
     document.addEventListener('keyup', (e) => {
@@ -1958,6 +2361,7 @@
       if (!previewRenderer) initPreviewRenderer();
       // Show first character
       if (CHARACTERS.length > 0) showCharacterInPreview(CHARACTERS[0].id);
+      updateControlsHUD();
     };
 
     window.showViewer = function() {
