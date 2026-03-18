@@ -1,0 +1,13 @@
+# Model binary data (too large for git — use LFS or host separately)
+scene.bin
+*.bin
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor
+.vscode/
+*.swp
+*.swo

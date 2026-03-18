@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grudge Warlords: Final Fighter</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;700;900&family=MedievalSharp&family=IM+Fell+English+SC&family=Uncial+Antiqua&family=Spectral+SC:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --gold: #eeb72b;
+      --gold-light: #f5d789;
+      --gold-dark: #7a601f;
+      --gold-mid: #cca133;
+      --bg-darkest: #0e111b;
+      --bg-dark: #121621;
+      --bg-mid: #1d2130;
+      --bg-accent: #262d40;
+      --fg: #ede9de;
+      --fg-muted: #a8a18a;
+      --red: #981b1b;
+      --red-bright: #d74242;
+      --green-bright: #00c758;
+      --blue-bright: #3080ff;
+      --purple: #ac4bff;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Spectral SC', 'IM Fell English SC', serif;
+      background: var(--bg-darkest);
+      color: var(--fg);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      cursor: default;
+    }
+
+    /* ===== LOADING SCREEN ===== */
+    #loading-screen {
+      position: fixed; inset: 0; z-index: 1000;
+      background: var(--bg-darkest);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transition: opacity 0.8s;
+    }
+    #loading-screen.hidden { opacity: 0; pointer-events: none; }
+    #loading-screen h1 {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 3rem; color: var(--gold);
+      text-shadow: 0 0 30px rgba(238,183,43,0.4);
+      letter-spacing: 0.15em;
+    }
+    #loading-screen .subtitle {
+      font-family: 'MedievalSharp', cursive;
+      color: var(--fg-muted); font-size: 1.2rem;
+      margin-top: 0.5rem; letter-spacing: 0.3em;
+    }
+    .loading-bar-container {
+      width: 400px; height: 8px; background: var(--bg-mid);
+      border: 1px solid var(--gold-dark); border-radius: 4px;
+      margin-top: 2rem; overflow: hidden;
+    }
+    .loading-bar {
+      height: 100%; width: 0%; border-radius: 4px;
+      background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
+      transition: width 0.3s;
+    }
+    .loading-text {
+      font-family: 'IM Fell English SC', serif;
+      color: var(--fg-muted); font-size: 0.85rem; margin-top: 1rem;
+    }
+
+    /* ===== TITLE / MENU SCREEN ===== */
+    #title-screen {
+      position: fixed; inset: 0; z-index: 900;
+      background: radial-gradient(ellipse at center, #1a1f2e 0%, var(--bg-darkest) 70%);
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    #title-screen.active { display: flex; }
+    .title-logo {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 4rem; font-weight: 900; color: var(--gold);
+      text-shadow: 0 0 40px rgba(238,183,43,0.5), 0 4px 8px rgba(0,0,0,0.6);
+      letter-spacing: 0.1em; text-align: center;
+    }
+    .title-sub {
+      font-family: 'MedievalSharp', cursive;
+      font-size: 1.8rem; color: var(--gold-mid);
+      text-shadow: 0 0 20px rgba(238,183,43,0.3);
+      margin-top: 0.5rem; letter-spacing: 0.3em;
+    }
+    .studio-badge {
+      font-family: 'Uncial Antiqua', cursive;
+      color: var(--fg-muted); font-size: 0.9rem;
+      letter-spacing: 0.2em; margin-top: 3rem;
+      border: 1px solid var(--gold-dark); padding: 0.5rem 1.5rem;
+      border-radius: 2px; background: rgba(122,96,31,0.1);
+    }
+    .menu-btn {
+      font-family: 'Cinzel', serif;
+      font-size: 1.3rem; color: var(--gold);
+      background: linear-gradient(180deg, rgba(238,183,43,0.1), rgba(122,96,31,0.2));
+      border: 2px solid var(--gold-dark);
+      padding: 1rem 3rem; margin-top: 1.5rem;
+      cursor: pointer; letter-spacing: 0.15em;
+      transition: all 0.3s; min-width: 300px; text-align: center;
+    }
+    .menu-btn:hover {
+      background: linear-gradient(180deg, rgba(238,183,43,0.25), rgba(122,96,31,0.35));
+      border-color: var(--gold); color: var(--gold-light);
+      box-shadow: 0 0 20px rgba(238,183,43,0.2);
+      transform: scale(1.03);
+    }
+
+    /* ===== CHARACTER SELECT ===== */
+    #char-select {
+      position: fixed; inset: 0; z-index: 800;
+      background: var(--bg-darkest);
+      display: none; flex-direction: column;
+    }
+    #char-select.active { display: flex; }
+    .select-header {
+      text-align: center; padding: 1.5rem;
+      border-bottom: 1px solid var(--gold-dark);
+      background: linear-gradient(180deg, var(--bg-dark), var(--bg-darkest));
+    }
+    .select-header h2 {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 2rem; color: var(--gold);
+      text-shadow: 0 0 20px rgba(238,183,43,0.3);
+    }
+    .select-header .player-label {
+      font-family: 'MedievalSharp', cursive;
+      font-size: 1rem; color: var(--fg-muted);
+      letter-spacing: 0.2em; margin-top: 0.3rem;
+    }
+    .select-body {
+      flex: 1; display: flex; overflow: hidden;
+    }
+    .select-sidebar {
+      width: 360px; overflow-y: auto; padding: 1rem;
+      border-right: 1px solid var(--gold-dark);
+      background: rgba(18,22,33,0.9);
+    }
+    .select-sidebar::-webkit-scrollbar { width: 6px; }
+    .select-sidebar::-webkit-scrollbar-track { background: var(--bg-darkest); }
+    .select-sidebar::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 3px; }
+    .char-card {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 0.8rem 1rem; margin-bottom: 0.5rem;
+      border: 1px solid var(--bg-accent);
+      background: var(--bg-mid); cursor: pointer;
+      transition: all 0.2s; border-radius: 4px;
+    }
+    .char-card:hover, .char-card.selected {
+      border-color: var(--gold); background: rgba(238,183,43,0.08);
+      box-shadow: 0 0 12px rgba(238,183,43,0.15);
+    }
+    .char-card.selected-p2 {
+      border-color: var(--blue-bright); background: rgba(48,128,255,0.08);
+      box-shadow: 0 0 12px rgba(48,128,255,0.15);
+    }
+    .char-card .char-icon {
+      width: 50px; height: 50px; border-radius: 50%;
+      border: 2px solid var(--gold-dark);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Cinzel Decorative', serif; font-size: 1.2rem;
+      color: var(--gold); background: var(--bg-accent);
+    }
+    .char-card .char-info h3 {
+      font-family: 'Cinzel', serif; font-size: 1rem; color: var(--fg);
+    }
+    .char-card .char-info .char-class {
+      font-family: 'IM Fell English SC', serif;
+      font-size: 0.8rem; color: var(--fg-muted);
+    }
+    .char-card .char-info .char-stats {
+      display: flex; gap: 0.8rem; margin-top: 0.3rem;
+    }
+    .stat-pip {
+      font-size: 0.7rem; color: var(--gold-mid);
+      font-family: 'Spectral SC', serif;
+    }
+    .select-preview {
+      flex: 1; position: relative;
+    }
+    #preview-canvas {
+      width: 100%; height: 100%;
+    }
+    .preview-name {
+      position: absolute; bottom: 100px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 2.5rem; color: var(--gold);
+      text-shadow: 0 0 30px rgba(238,183,43,0.4), 0 2px 4px rgba(0,0,0,0.8);
+      pointer-events: none; white-space: nowrap;
+    }
+    .preview-class {
+      position: absolute; bottom: 70px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'MedievalSharp', cursive;
+      font-size: 1.1rem; color: var(--fg-muted);
+      letter-spacing: 0.3em; pointer-events: none;
+    }
+    .select-footer {
+      display: flex; justify-content: space-between;
+      align-items: center; padding: 1rem 2rem;
+      border-top: 1px solid var(--gold-dark);
+      background: var(--bg-dark);
+    }
+    .select-footer .back-btn {
+      font-family: 'Cinzel', serif; color: var(--fg-muted);
+      background: none; border: 1px solid var(--bg-accent);
+      padding: 0.6rem 1.5rem; cursor: pointer;
+      transition: all 0.2s; font-size: 0.9rem;
+    }
+    .select-footer .back-btn:hover {
+      color: var(--fg); border-color: var(--fg-muted);
+    }
+    .fight-btn {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 1.3rem; color: var(--bg-darkest);
+      background: linear-gradient(180deg, var(--gold-light), var(--gold), var(--gold-dark));
+      border: 2px solid var(--gold);
+      padding: 0.8rem 3rem; cursor: pointer;
+      letter-spacing: 0.15em;
+      transition: all 0.3s; text-transform: uppercase;
+    }
+    .fight-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 25px rgba(238,183,43,0.4);
+    }
+    .fight-btn:disabled {
+      opacity: 0.4; cursor: not-allowed; transform: none;
+      box-shadow: none;
+    }
+
+    /* ===== BATTLE ARENA ===== */
+    #battle-arena {
+      position: fixed; inset: 0; z-index: 700;
+      display: none;
+    }
+    #battle-arena.active { display: block; }
+    #battle-canvas {
+      width: 100%; height: 100%;
+    }
+
+    /* HUD */
+    .battle-hud {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 710; pointer-events: none;
+      padding: 1rem 2rem;
+    }
+    .hud-top {
+      display: flex; justify-content: space-between;
+      align-items: flex-start;
+    }
+    .player-hud {
+      display: flex; flex-direction: column; width: 380px;
+    }
+    .player-hud.right { align-items: flex-end; }
+    .player-name {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 1.2rem; letter-spacing: 0.1em;
+      margin-bottom: 0.3rem;
+    }
+    .p1-name { color: var(--gold); }
+    .p2-name { color: var(--blue-bright); }
+    .health-bar-outer {
+      width: 100%; height: 24px;
+      background: var(--bg-darkest);
+      border: 2px solid var(--gold-dark);
+      border-radius: 2px; overflow: hidden;
+      position: relative;
+    }
+    .health-bar-outer.p2 { border-color: #1e4080; }
+    .health-bar-inner {
+      height: 100%; transition: width 0.3s;
+      border-radius: 1px;
+    }
+    .health-bar-inner.p1 {
+      background: linear-gradient(90deg, #d92626, #ff4444, #d92626);
+    }
+    .health-bar-inner.p2 {
+      background: linear-gradient(90deg, #2662d9, #4488ff, #2662d9);
+      float: right;
+    }
+    .health-text {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Cinzel', serif; font-size: 0.8rem;
+      color: var(--fg); text-shadow: 0 1px 3px #000;
+    }
+    .hud-timer {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 2rem; color: var(--gold);
+      text-shadow: 0 0 15px rgba(238,183,43,0.4);
+      min-width: 60px; text-align: center;
+    }
+    .combo-display {
+      position: fixed; z-index: 720;
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 3rem; color: var(--gold-light);
+      text-shadow: 0 0 20px rgba(238,183,43,0.6), 0 2px 4px #000;
+      pointer-events: none; opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .combo-display.p1 { left: 80px; top: 120px; }
+    .combo-display.p2 { right: 80px; top: 120px; color: #93b0ec; text-shadow: 0 0 20px rgba(48,128,255,0.6), 0 2px 4px #000; }
+    .combo-display.active { opacity: 1; }
+
+    /* Round / KO Overlay */
+    .battle-overlay {
+      position: fixed; inset: 0; z-index: 750;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.6);
+      flex-direction: column;
+    }
+    .battle-overlay.active { display: flex; }
+    .round-text {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 5rem; color: var(--gold);
+      text-shadow: 0 0 50px rgba(238,183,43,0.6), 0 4px 8px #000;
+      animation: scaleIn 0.5s ease-out;
+    }
+    .ko-text {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 7rem; color: var(--red-bright);
+      text-shadow: 0 0 50px rgba(215,66,66,0.6), 0 4px 8px #000;
+      animation: scaleIn 0.3s ease-out;
+    }
+    .winner-text {
+      font-family: 'Cinzel', serif;
+      font-size: 2rem; color: var(--gold-light);
+      margin-top: 1rem; letter-spacing: 0.2em;
+    }
+
+    @keyframes scaleIn {
+      from { transform: scale(2); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* Controls HUD */
+    .controls-hud {
+      position: fixed; bottom: 1rem; left: 50%;
+      transform: translateX(-50%); z-index: 710;
+      font-family: 'IM Fell English SC', serif;
+      color: var(--fg-muted); font-size: 0.8rem;
+      text-align: center; pointer-events: none;
+      background: rgba(14,17,27,0.8);
+      padding: 0.5rem 1.5rem; border-radius: 4px;
+      border: 1px solid var(--gold-dark);
+    }
+    .key-badge {
+      display: inline-block;
+      background: var(--bg-accent); border: 1px solid var(--gold-dark);
+      padding: 0.15rem 0.5rem; border-radius: 3px;
+      font-family: 'Spectral SC', serif; font-size: 0.75rem;
+      color: var(--gold-mid); margin: 0 0.15rem;
+    }
+
+    /* Grudge Studio Watermark */
+    .gs-watermark {
+      position: fixed; bottom: 1rem; right: 1rem;
+      z-index: 720; pointer-events: none;
+      font-family: 'Uncial Antiqua', cursive;
+      font-size: 0.75rem; color: var(--gold-dark);
+      opacity: 0.6; letter-spacing: 0.15em;
+    }
+
+    /* Damage Numbers */
+    .damage-num {
+      position: fixed; z-index: 730;
+      font-family: 'Cinzel Decorative', serif;
+      font-weight: 700; pointer-events: none;
+      animation: floatUp 1s ease-out forwards;
+    }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-80px) scale(0.5); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOADING -->
+  <div id="loading-screen">
+    <h1>Grudge Warlords</h1>
+    <div class="subtitle">FINAL FIGHTER</div>
+    <div class="loading-bar-container">
+      <div class="loading-bar" id="loading-bar"></div>
+    </div>
+    <div class="loading-text" id="loading-text">Summoning warriors...</div>
+  </div>
+
+  <!-- TITLE -->
+  <div id="title-screen">
+    <div class="title-logo">Grudge Warlords</div>
+    <div class="title-sub">FINAL FIGHTER</div>
+    <div class="studio-badge">GRUDGE STUDIO</div>
+    <button class="menu-btn" id="btn-fight" onclick="showCharSelect()">Enter the Arena</button>
+    <button class="menu-btn" id="btn-viewer" onclick="showViewer()">Character Viewer</button>
+  </div>
+
+  <!-- CHARACTER SELECT -->
+  <div id="char-select">
+    <div class="select-header">
+      <h2>Choose Your Warriors</h2>
+      <div class="player-label" id="select-phase">SELECT PLAYER 1 WARRIOR</div>
+    </div>
+    <div class="select-body">
+      <div class="select-sidebar" id="char-list"></div>
+      <div class="select-preview">
+        <canvas id="preview-canvas"></canvas>
+        <div class="preview-name" id="preview-name"></div>
+        <div class="preview-class" id="preview-class"></div>
+      </div>
+    </div>
+    <div class="select-footer">
+      <button class="back-btn" onclick="backToTitle()">Back</button>
+      <button class="fight-btn" id="start-fight-btn" disabled onclick="startFight()">FIGHT!</button>
+    </div>
+  </div>
+
+  <!-- BATTLE ARENA -->
+  <div id="battle-arena">
+    <canvas id="battle-canvas"></canvas>
+    <div class="battle-hud">
+      <div class="hud-top">
+        <div class="player-hud">
+          <div class="player-name p1-name" id="p1-hud-name"></div>
+          <div class="health-bar-outer">
+            <div class="health-bar-inner p1" id="p1-health"></div>
+            <div class="health-text" id="p1-health-text">100%</div>
+          </div>
+        </div>
+        <div class="hud-timer" id="hud-timer">99</div>
+        <div class="player-hud right">
+          <div class="player-name p2-name" id="p2-hud-name"></div>
+          <div class="health-bar-outer p2">
+            <div class="health-bar-inner p2" id="p2-health"></div>
+            <div class="health-text" id="p2-health-text">100%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="combo-display p1" id="combo-p1"></div>
+    <div class="combo-display p2" id="combo-p2"></div>
+    <div class="controls-hud" id="battle-controls">
+      <span class="key-badge">W</span><span class="key-badge">A</span><span class="key-badge">S</span><span class="key-badge">D</span> Move
+      &nbsp;&nbsp;
+      <span class="key-badge">J</span> Punch
+      &nbsp;&nbsp;
+      <span class="key-badge">K</span> Kick
+      &nbsp;&nbsp;
+      <span class="key-badge">L</span> Special
+      &nbsp;&nbsp;
+      <span class="key-badge">Space</span> Block
+      &nbsp;&nbsp;
+      <span class="key-badge">Esc</span> Menu
+      &nbsp;&nbsp;
+      <span class="key-badge">`</span> Debug
+    </div>
+  </div>
+
+  <!-- Battle Overlays -->
+  <div class="battle-overlay" id="round-overlay">
+    <div class="round-text" id="round-text"></div>
+  </div>
+  <div class="battle-overlay" id="ko-overlay">
+    <div class="ko-text">K.O.!</div>
+    <div class="winner-text" id="winner-text"></div>
+    <button class="menu-btn" style="margin-top:2rem" onclick="backToSelect()">Continue</button>
+  </div>
+
+  <div class="gs-watermark">GRUDGE STUDIO</div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ===== CHARACTER DATA =====
+    const CHARACTERS = [
+      { id: 'Model001', name: 'Cao Pi', class: 'Swordsman', icon: 'CP', atk: 7, def: 6, spd: 8, meshPrefix: 'Model001', color: '#cc3333' },
+      { id: 'Model002', name: 'Cao Zijian', class: 'Strategist', icon: 'CZ', atk: 5, def: 7, spd: 7, meshPrefix: 'Model002', color: '#8855cc' },
+      { id: 'Model003', name: 'Dian Wei', class: 'Berserker', icon: 'DW', atk: 10, def: 8, spd: 4, meshPrefix: 'Model003', color: '#dd6633' },
+      { id: 'Model004', name: 'Diao Chan', class: 'Enchantress', icon: 'DC', atk: 6, def: 5, spd: 9, meshPrefix: 'Model004', color: '#dd55aa' },
+      { id: 'Model005', name: 'Dong Zhuo', class: 'Tyrant', icon: 'DZ', atk: 9, def: 9, spd: 3, meshPrefix: 'Model005', color: '#884422' },
+      { id: 'Model006', name: 'Guo Jia', class: 'Tactician', icon: 'GJ', atk: 6, def: 6, spd: 8, meshPrefix: 'Model006', color: '#3388cc' },
+      { id: 'Model007', name: 'Huang Gai', class: 'Vanguard', icon: 'HG', atk: 8, def: 8, spd: 5, meshPrefix: 'Model007', color: '#cc8833' },
+      { id: 'Model008', name: 'Huang Yueying', class: 'Inventor', icon: 'HY', atk: 7, def: 5, spd: 8, meshPrefix: 'Model008', color: '#44bb88' },
+      { id: 'Model009', name: 'Xu Kui', class: 'Shadow Blade', icon: 'XK', atk: 8, def: 5, spd: 9, meshPrefix: 'Model009', color: '#6644aa' },
+      { id: 'Model010', name: 'Liu Bei', class: 'Warlord', icon: 'LB', atk: 7, def: 7, spd: 7, meshPrefix: 'Model010', color: '#44aa44' },
+      { id: 'Model011', name: 'Lu Bu', class: 'God of War', icon: 'LU', atk: 10, def: 7, spd: 7, meshPrefix: 'Model011', color: '#cc2222' },
+      { id: 'Model012', name: 'Lu Meng', class: 'Blade Master', icon: 'LM', atk: 8, def: 6, spd: 7, meshPrefix: 'Model012', color: '#2266bb' },
+    ];
+
+    // ===== STATE =====
+    let gltfScene = null;
+    let characterGroups = {};
+    let characterBounds = {}; // stores per-character bounding dimensions
+    let previewScene, previewCamera, previewRenderer, previewControls;
+    let battleScene, battleCamera, battleRenderer;
+    let selectingPlayer = 1;
+    let selectedP1 = null, selectedP2 = null;
+    let previewChar = null;
+    let gameState = null;
+    let animFrame = null;
+    let battleActive = false;
+    let keys = {};
+    let debugColliders = false;
+    let debugHelpers = [];
+
+    // ===== COLLIDER SYSTEM (Three.js Box3) =====
+    // Attack reach defines the hitbox that extends from the attacker's body edge.
+    // { fwd: forward reach, up: vertical extent, wide: lateral width }
+    const ATTACK_HITBOXES = {
+      punch:   { fwd: 0.45, up: 0.3, wide: 0.25 }, // short jab
+      kick:    { fwd: 0.65, up: 0.4, wide: 0.3 },  // medium leg reach
+      special: { fwd: 0.9,  up: 0.6, wide: 0.5 },  // wide sweep/blast
+    };
+
+    // Build a body collider Box3 for a fighter at their current position.
+    // Uses actual measured character dimensions, not hardcoded.
+    function getBodyCollider(fighter) {
+      const b = fighter.bounds; // { hw, hh, hd } half-width/height/depth
+      return new THREE.Box3(
+        new THREE.Vector3(fighter.x - b.hw, 0, -b.hd),
+        new THREE.Vector3(fighter.x + b.hw, b.hh * 2, b.hd)
+      );
+    }
+
+    // Build hurtbox zones (upper / mid / lower body) from a fighter.
+    function getHurtboxes(fighter) {
+      const b = fighter.bounds;
+      const h = b.hh * 2; // full height
+      const third = h / 3;
+      const x = fighter.x;
+      return {
+        upper: new THREE.Box3(
+          new THREE.Vector3(x - b.hw, third * 2, -b.hd),
+          new THREE.Vector3(x + b.hw, h, b.hd)
+        ),
+        mid: new THREE.Box3(
+          new THREE.Vector3(x - b.hw, third, -b.hd),
+          new THREE.Vector3(x + b.hw, third * 2, b.hd)
+        ),
+        lower: new THREE.Box3(
+          new THREE.Vector3(x - b.hw * 0.9, 0, -b.hd),
+          new THREE.Vector3(x + b.hw * 0.9, third, b.hd)
+        ),
+      };
+    }
+
+    // Build an attack hitbox extending from the attacker toward the defender.
+    function getAttackHitbox(attacker, attackType) {
+      const atk = ATTACK_HITBOXES[attackType];
+      if (!atk) return null;
+      const b = attacker.bounds;
+      const facingRight = attacker.group.rotation.y < Math.PI / 2;
+      const dir = facingRight ? 1 : -1;
+      // Hitbox starts at body edge, extends forward
+      const edgeX = attacker.x + dir * b.hw;
+      const farX = edgeX + dir * atk.fwd;
+      const minX = Math.min(edgeX, farX);
+      const maxX = Math.max(edgeX, farX);
+      const cy = b.hh; // centered vertically on body
+      return new THREE.Box3(
+        new THREE.Vector3(minX, cy - atk.up, -atk.wide),
+        new THREE.Vector3(maxX, cy + atk.up, atk.wide)
+      );
+    }
+
+    // Push two fighters apart if their body colliders overlap.
+    function resolveBodyCollision(p1, p2) {
+      const box1 = getBodyCollider(p1);
+      const box2 = getBodyCollider(p2);
+      if (!box1.intersectsBox(box2)) return;
+      // Compute overlap on X axis
+      const overlapLeft = box1.max.x - box2.min.x;
+      const overlapRight = box2.max.x - box1.min.x;
+      const pushDist = Math.min(overlapLeft, overlapRight) / 2 + 0.01;
+      if (p1.x < p2.x) {
+        p1.x -= pushDist;
+        p2.x += pushDist;
+      } else {
+        p1.x += pushDist;
+        p2.x -= pushDist;
+      }
+      // Clamp to arena bounds
+      p1.x = Math.max(-3.5, Math.min(3.5, p1.x));
+      p2.x = Math.max(-3.5, Math.min(3.5, p2.x));
+      p1.group.position.x = p1.x;
+      p2.group.position.x = p2.x;
+    }
+
+    // ===== DEBUG VISUALIZATION =====
+    function clearDebugHelpers() {
+      for (const h of debugHelpers) battleScene.remove(h);
+      debugHelpers = [];
+    }
+
+    function drawDebugColliders() {
+      clearDebugHelpers();
+      if (!debugColliders || !gameState) return;
+      const addHelper = (box, color) => {
+        const helper = new THREE.Box3Helper(box, color);
+        battleScene.add(helper);
+        debugHelpers.push(helper);
+      };
+      // Body colliders
+      addHelper(getBodyCollider(gameState.p1), 0xeeb72b); // gold
+      addHelper(getBodyCollider(gameState.p2), 0x3080ff); // blue
+      // Hurtbox zones
+      const h1 = getHurtboxes(gameState.p1);
+      const h2 = getHurtboxes(gameState.p2);
+      addHelper(h1.upper, 0xff4444);
+      addHelper(h1.mid, 0xffaa33);
+      addHelper(h1.lower, 0x44ff44);
+      addHelper(h2.upper, 0xff4444);
+      addHelper(h2.mid, 0xffaa33);
+      addHelper(h2.lower, 0x44ff44);
+    };
+
+    // ===== LOADING =====
+    const loader = new GLTFLoader();
+    const loadingBar = document.getElementById('loading-bar');
+    const loadingText = document.getElementById('loading-text');
+
+    loader.load('./scene.gltf',
+      (gltf) => {
+        gltfScene = gltf.scene;
+        loadingBar.style.width = '100%';
+        loadingText.textContent = 'Warriors assembled!';
+        parseCharacters();
+        setTimeout(() => {
+          document.getElementById('loading-screen').classList.add('hidden');
+          document.getElementById('title-screen').classList.add('active');
+        }, 600);
+      },
+      (progress) => {
+        if (progress.total > 0) {
+          const pct = (progress.loaded / progress.total * 100).toFixed(0);
+          loadingBar.style.width = pct + '%';
+          loadingText.textContent = `Loading warriors... ${pct}%`;
+        }
+      },
+      (error) => {
+        loadingText.textContent = 'Error loading scene: ' + error.message;
+        console.error(error);
+      }
+    );
+
+    function parseCharacters() {
+      // Ensure world matrices are up to date so we can bake transforms
+      gltfScene.updateMatrixWorld(true);
+
+      // Only collect actual Mesh nodes (not Groups) to avoid duplicates.
+      // The GLTF has parent groups AND child meshes both named "ModelXXX",
+      // collecting both causes doubled geometry.
+      gltfScene.traverse((child) => {
+        if (child.isMesh) {
+          const name = child.name || '';
+          for (const c of CHARACTERS) {
+            if (name.includes(c.meshPrefix)) {
+              if (!characterGroups[c.id]) characterGroups[c.id] = [];
+              characterGroups[c.id].push(child);
+              break;
+            }
+          }
+        }
+      });
+    }
+
+    // ===== PREVIEW RENDERER =====
+    function initPreviewRenderer() {
+      const canvas = document.getElementById('preview-canvas');
+      previewRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      previewRenderer.setPixelRatio(window.devicePixelRatio);
+      previewRenderer.setSize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight);
+      previewRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+      previewRenderer.toneMappingExposure = 1.2;
+
+      previewScene = new THREE.Scene();
+      previewScene.background = new THREE.Color(0x0e111b);
+
+      previewCamera = new THREE.PerspectiveCamera(45,
+        canvas.parentElement.clientWidth / canvas.parentElement.clientHeight, 0.1, 100);
+      previewCamera.position.set(0, 0.8, 2.5);
+
+      previewControls = new OrbitControls(previewCamera, canvas);
+      previewControls.target.set(0, 0.7, 0);
+      previewControls.enablePan = false;
+      previewControls.minDistance = 1;
+      previewControls.maxDistance = 5;
+      previewControls.autoRotate = true;
+      previewControls.autoRotateSpeed = 2;
+      previewControls.update();
+
+      // Lighting
+      const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+      previewScene.add(ambient);
+      const dirLight = new THREE.DirectionalLight(0xeeb72b, 1.5);
+      dirLight.position.set(3, 5, 3);
+      previewScene.add(dirLight);
+      const fillLight = new THREE.DirectionalLight(0x3080ff, 0.5);
+      fillLight.position.set(-3, 3, -2);
+      previewScene.add(fillLight);
+      const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
+      rimLight.position.set(0, 2, -4);
+      previewScene.add(rimLight);
+
+      // Ground circle
+      const groundGeo = new THREE.CircleGeometry(1.5, 64);
+      const groundMat = new THREE.MeshStandardMaterial({
+        color: 0x1d2130, metalness: 0.3, roughness: 0.8
+      });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -0.01;
+      previewScene.add(ground);
+
+      // Gold ring
+      const ringGeo = new THREE.RingGeometry(1.45, 1.55, 64);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x7a601f, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.001;
+      previewScene.add(ring);
+
+      animatePreview();
+    }
+
+    function animatePreview() {
+      animFrame = requestAnimationFrame(animatePreview);
+      if (previewControls) previewControls.update();
+      if (previewRenderer && previewScene && previewCamera) {
+        previewRenderer.render(previewScene, previewCamera);
+      }
+    }
+
+    function showCharacterInPreview(charId) {
+      if (!previewScene) return;
+
+      // Remove old preview
+      if (previewChar) {
+        previewScene.remove(previewChar);
+        previewChar = null;
+      }
+
+      if (!characterGroups[charId] || characterGroups[charId].length === 0) return;
+
+      const char = CHARACTERS.find(c => c.id === charId);
+
+      // Clone meshes into a group, baking world transforms from the
+      // original GLTF hierarchy (display.fbx has 0.01 scale + axis swap,
+      // Sketchfab_model has rotation — these are lost on a flat clone).
+      const group = new THREE.Group();
+      for (const mesh of characterGroups[charId]) {
+        const cloned = mesh.clone(true);
+        // Bake the original world transform into the clone's local transform
+        mesh.matrixWorld.decompose(cloned.position, cloned.quaternion, cloned.scale);
+        group.add(cloned);
+      }
+
+      // Compute bounding box, center X/Z, and place feet at Y=0
+      const box = new THREE.Box3().setFromObject(group);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = 1.6 / maxDim;
+      group.scale.setScalar(scale);
+      // Center horizontally, align feet (box.min.y) to ground
+      group.position.set(
+        -center.x * scale,
+        -box.min.y * scale,
+        -center.z * scale
+      );
+
+      previewScene.add(group);
+      previewChar = group;
+
+      document.getElementById('preview-name').textContent = char.name;
+      document.getElementById('preview-class').textContent = char.class.toUpperCase();
+    }
+
+    // ===== CHAR SELECT UI =====
+    function buildCharList() {
+      const list = document.getElementById('char-list');
+      list.innerHTML = '';
+      for (const c of CHARACTERS) {
+        const card = document.createElement('div');
+        card.className = 'char-card';
+        card.dataset.id = c.id;
+        card.innerHTML = `
+          <div class="char-icon" style="border-color:${c.color}">${c.icon}</div>
+          <div class="char-info">
+            <h3>${c.name}</h3>
+            <div class="char-class">${c.class}</div>
+            <div class="char-stats">
+              <span class="stat-pip">ATK ${c.atk}</span>
+              <span class="stat-pip">DEF ${c.def}</span>
+              <span class="stat-pip">SPD ${c.spd}</span>
+            </div>
+          </div>
+        `;
+        card.addEventListener('click', () => onCharClick(c.id));
+        card.addEventListener('mouseenter', () => showCharacterInPreview(c.id));
+        list.appendChild(card);
+      }
+    }
+
+    function onCharClick(charId) {
+      if (selectingPlayer === 1) {
+        selectedP1 = charId;
+        document.querySelectorAll('.char-card.selected').forEach(c => c.classList.remove('selected'));
+        document.querySelector(`.char-card[data-id="${charId}"]`).classList.add('selected');
+        selectingPlayer = 2;
+        document.getElementById('select-phase').textContent = 'SELECT PLAYER 2 WARRIOR';
+      } else {
+        if (charId === selectedP1) return; // can't pick same
+        selectedP2 = charId;
+        document.querySelectorAll('.char-card.selected-p2').forEach(c => c.classList.remove('selected-p2'));
+        document.querySelector(`.char-card[data-id="${charId}"]`).classList.add('selected-p2');
+        document.getElementById('start-fight-btn').disabled = false;
+      }
+    }
+
+    // ===== BATTLE SYSTEM =====
+    function initBattle() {
+      const canvas = document.getElementById('battle-canvas');
+      battleRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      battleRenderer.setPixelRatio(window.devicePixelRatio);
+      battleRenderer.setSize(window.innerWidth, window.innerHeight);
+      battleRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+      battleRenderer.toneMappingExposure = 1.0;
+
+      battleScene = new THREE.Scene();
+      battleScene.background = new THREE.Color(0x0a0d15);
+      battleScene.fog = new THREE.FogExp2(0x0a0d15, 0.15);
+
+      battleCamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+      battleCamera.position.set(0, 2, 6);
+      battleCamera.lookAt(0, 0.8, 0);
+
+      // Lighting
+      const ambient = new THREE.AmbientLight(0xffffff, 0.3);
+      battleScene.add(ambient);
+
+      const spotP1 = new THREE.SpotLight(0xeeb72b, 3, 10, Math.PI / 6);
+      spotP1.position.set(-3, 5, 2);
+      spotP1.target.position.set(-1.5, 0, 0);
+      battleScene.add(spotP1);
+      battleScene.add(spotP1.target);
+
+      const spotP2 = new THREE.SpotLight(0x3080ff, 3, 10, Math.PI / 6);
+      spotP2.position.set(3, 5, 2);
+      spotP2.target.position.set(1.5, 0, 0);
+      battleScene.add(spotP2);
+      battleScene.add(spotP2.target);
+
+      const backLight = new THREE.DirectionalLight(0x6644aa, 0.4);
+      backLight.position.set(0, 3, -5);
+      battleScene.add(backLight);
+
+      // Arena floor
+      const floorGeo = new THREE.PlaneGeometry(12, 8, 20, 20);
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x161a27, metalness: 0.5, roughness: 0.6
+      });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      battleScene.add(floor);
+
+      // Arena border ring
+      const arenaRing = new THREE.RingGeometry(4.5, 4.7, 64);
+      const arenaMat = new THREE.MeshBasicMaterial({ color: 0x7a601f, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(arenaRing, arenaMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.005;
+      battleScene.add(ring);
+
+      // Inner arena circle
+      const innerRing = new THREE.RingGeometry(2.8, 2.85, 64);
+      const innerMat = new THREE.MeshBasicMaterial({ color: 0x3a2f10, side: THREE.DoubleSide });
+      const inner = new THREE.Mesh(innerRing, innerMat);
+      inner.rotation.x = -Math.PI / 2;
+      inner.position.y = 0.003;
+      battleScene.add(inner);
+
+      // Background pillars
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const pillarGeo = new THREE.CylinderGeometry(0.15, 0.2, 4, 8);
+        const pillarMat = new THREE.MeshStandardMaterial({
+          color: 0x1d2130, metalness: 0.6, roughness: 0.4
+        });
+        const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+        pillar.position.set(Math.cos(angle) * 5.5, 2, Math.sin(angle) * 4);
+        battleScene.add(pillar);
+
+        // Gold cap
+        const capGeo = new THREE.CylinderGeometry(0.22, 0.15, 0.15, 8);
+        const capMat = new THREE.MeshStandardMaterial({ color: 0xeeb72b, metalness: 0.7, roughness: 0.3 });
+        const cap = new THREE.Mesh(capGeo, capMat);
+        cap.position.set(Math.cos(angle) * 5.5, 4.07, Math.sin(angle) * 4);
+        battleScene.add(cap);
+      }
+
+      // Place fighters
+      const p1Char = CHARACTERS.find(c => c.id === selectedP1);
+      const p2Char = CHARACTERS.find(c => c.id === selectedP2);
+
+      const p1Group = buildFighterGroup(selectedP1);
+      const p2Group = buildFighterGroup(selectedP2);
+
+      // Only override X for arena placement — preserve the Y offset
+      // computed by buildFighterGroup that puts feet on the ground.
+      p1Group.position.x = -1.8;
+      p2Group.position.x = 1.8;
+      p2Group.rotation.y = Math.PI;
+
+      battleScene.add(p1Group);
+      battleScene.add(p2Group);
+
+      // HUD
+      document.getElementById('p1-hud-name').textContent = p1Char.name;
+      document.getElementById('p2-hud-name').textContent = p2Char.name;
+
+      gameState = {
+        p1: { group: p1Group, char: p1Char, hp: 100, maxHp: 100, x: -1.8, combo: 0, lastHit: 0, blocking: false, cooldown: 0, stunned: 0,
+               bounds: characterBounds[selectedP1] },
+        p2: { group: p2Group, char: p2Char, hp: 100, maxHp: 100, x: 1.8, combo: 0, lastHit: 0, blocking: false, cooldown: 0, stunned: 0, ai: true,
+               bounds: characterBounds[selectedP2] },
+        timer: 99,
+        round: 1,
+        lastTimerTick: Date.now(),
+        paused: false,
+      };
+
+      updateHealthBars();
+    }
+
+    function buildFighterGroup(charId) {
+      const group = new THREE.Group();
+      if (characterGroups[charId]) {
+        for (const mesh of characterGroups[charId]) {
+          const cloned = mesh.clone(true);
+          // Bake world transform so parent hierarchy transforms aren't lost
+          mesh.matrixWorld.decompose(cloned.position, cloned.quaternion, cloned.scale);
+          group.add(cloned);
+        }
+      }
+      // Compute bounds, center X/Z, feet at Y=0
+      const box = new THREE.Box3().setFromObject(group);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = 1.6 / maxDim;
+      group.scale.setScalar(scale);
+      group.position.set(
+        -center.x * scale,
+        -box.min.y * scale,
+        -center.z * scale
+      );
+
+      // Measure final scaled dimensions for colliders.
+      // Recompute box after positioning so it's in final world space.
+      group.updateMatrixWorld(true);
+      const finalBox = new THREE.Box3().setFromObject(group);
+      const finalSize = finalBox.getSize(new THREE.Vector3());
+      characterBounds[charId] = {
+        hw: finalSize.x / 2,   // half-width
+        hh: finalSize.y / 2,   // half-height
+        hd: finalSize.z / 2,   // half-depth
+      };
+
+      return group;
+    }
+
+    function updateHealthBars() {
+      if (!gameState) return;
+      const p1Pct = Math.max(0, gameState.p1.hp / gameState.p1.maxHp * 100);
+      const p2Pct = Math.max(0, gameState.p2.hp / gameState.p2.maxHp * 100);
+      document.getElementById('p1-health').style.width = p1Pct + '%';
+      document.getElementById('p2-health').style.width = p2Pct + '%';
+      document.getElementById('p1-health-text').textContent = Math.ceil(p1Pct) + '%';
+      document.getElementById('p2-health-text').textContent = Math.ceil(p2Pct) + '%';
+      document.getElementById('hud-timer').textContent = Math.ceil(gameState.timer);
+    }
+
+    function showDamage(amount, isP1Target) {
+      const el = document.createElement('div');
+      el.className = 'damage-num';
+      el.textContent = '-' + amount;
+      el.style.color = amount >= 15 ? '#ff4444' : amount >= 10 ? '#ffaa33' : '#eeb72b';
+      el.style.fontSize = amount >= 15 ? '2.5rem' : amount >= 10 ? '2rem' : '1.5rem';
+      el.style.left = isP1Target ? '25%' : '70%';
+      el.style.top = '30%';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1000);
+    }
+
+    function showCombo(player, count) {
+      const el = document.getElementById('combo-' + player);
+      if (count >= 2) {
+        el.textContent = count + ' HIT COMBO!';
+        el.classList.add('active');
+        clearTimeout(el._timeout);
+        el._timeout = setTimeout(() => el.classList.remove('active'), 1500);
+      }
+    }
+
+    // ===== ATTACK LOGIC (Hitbox/Hurtbox) =====
+    function performAttack(attacker, defender, attackType) {
+      if (attacker.cooldown > 0 || attacker.stunned > 0) return;
+
+      // --- Hitbox range check: attack must physically reach defender ---
+      const attackBox = getAttackHitbox(attacker, attackType);
+      const defenderBody = getBodyCollider(defender);
+      if (!attackBox || !attackBox.intersectsBox(defenderBody)) {
+        // Whiff — attack missed, still apply cooldown (commit to the swing)
+        const whiffCooldowns = { punch: 200, kick: 350, special: 800 };
+        attacker.cooldown = whiffCooldowns[attackType] || 200;
+
+        // Flash attack hitbox red briefly in debug mode
+        if (debugColliders) {
+          const helper = new THREE.Box3Helper(attackBox, 0xff0000);
+          battleScene.add(helper);
+          debugHelpers.push(helper);
+          setTimeout(() => { battleScene.remove(helper); }, 150);
+        }
+        return;
+      }
+
+      // --- Hit confirmed: determine which zone was struck ---
+      const hurtboxes = getHurtboxes(defender);
+      let hitZone = 'mid'; // default
+      if (attackBox.intersectsBox(hurtboxes.upper)) hitZone = 'upper';
+      else if (attackBox.intersectsBox(hurtboxes.lower)) hitZone = 'lower';
+
+      // Flash green hitbox in debug mode
+      if (debugColliders) {
+        const helper = new THREE.Box3Helper(attackBox, 0x00ff00);
+        battleScene.add(helper);
+        debugHelpers.push(helper);
+        setTimeout(() => { battleScene.remove(helper); }, 200);
+      }
+
+      const now = Date.now();
+      let baseDmg, cooldown;
+
+      switch (attackType) {
+        case 'punch':
+          baseDmg = 3 + Math.floor(attacker.char.atk * 0.5);
+          cooldown = 300;
+          break;
+        case 'kick':
+          baseDmg = 5 + Math.floor(attacker.char.atk * 0.7);
+          cooldown = 500;
+          break;
+        case 'special':
+          baseDmg = 8 + attacker.char.atk;
+          cooldown = 1200;
+          break;
+        default: return;
+      }
+
+      // Zone damage modifier: headshots hurt more, leg hits less
+      if (hitZone === 'upper') baseDmg = Math.floor(baseDmg * 1.25);
+      else if (hitZone === 'lower') baseDmg = Math.floor(baseDmg * 0.8);
+
+      // Defense reduction
+      let finalDmg = baseDmg;
+      if (defender.blocking) {
+        finalDmg = Math.max(1, Math.floor(baseDmg * 0.2));
+        if (attackType === 'special') attacker.stunned = 600;
+      } else {
+        finalDmg = Math.max(1, baseDmg - Math.floor(defender.char.def * 0.3));
+      }
+
+      // Random variance
+      finalDmg += Math.floor(Math.random() * 3) - 1;
+      finalDmg = Math.max(1, finalDmg);
+
+      // Combo tracking
+      if (now - defender.lastHit < 1500) {
+        attacker.combo++;
+        if (attacker.combo >= 3) finalDmg = Math.floor(finalDmg * 1.3);
+      } else {
+        attacker.combo = 1;
+      }
+      defender.lastHit = now;
+
+      defender.hp = Math.max(0, defender.hp - finalDmg);
+      attacker.cooldown = cooldown;
+
+      // Visual feedback - bob the model
+      const origY = defender.group.position.y;
+      defender.group.position.y = origY + 0.05;
+      setTimeout(() => { if (defender.group) defender.group.position.y = origY; }, 100);
+
+      const isP1Target = defender === gameState.p1;
+      showDamage(finalDmg, isP1Target);
+      showCombo(isP1Target ? 'p2' : 'p1', attacker.combo);
+
+      // Knockback (scaled by attack type)
+      if (!defender.blocking) {
+        const knockback = attackType === 'special' ? 0.35 : attackType === 'kick' ? 0.2 : 0.12;
+        const dir = defender.x > attacker.x ? knockback : -knockback;
+        defender.x = Math.max(-3.5, Math.min(3.5, defender.x + dir));
+        defender.group.position.x = defender.x;
+      }
+
+      updateHealthBars();
+
+      // Check KO
+      if (defender.hp <= 0) {
+        endRound(attacker === gameState.p1 ? 'p1' : 'p2');
+      }
+    }
+
+    // ===== AI =====
+    function updateAI(dt) {
+      if (!gameState || gameState.paused) return;
+      const ai = gameState.p2;
+      const player = gameState.p1;
+      if (!ai.ai || ai.hp <= 0 || player.hp <= 0) return;
+
+      ai.cooldown = Math.max(0, ai.cooldown - dt);
+      ai.stunned = Math.max(0, ai.stunned - dt);
+
+      const dist = Math.abs(ai.x - player.x);
+
+      // Movement
+      const moveSpeed = 1.5 * (ai.char.spd / 10);
+      if (dist > 1.2) {
+        ai.x += (player.x > ai.x ? 1 : -1) * moveSpeed * dt / 1000;
+      } else if (dist < 0.6) {
+        ai.x += (player.x > ai.x ? -1 : 1) * moveSpeed * 0.5 * dt / 1000;
+      }
+      ai.x = Math.max(-3.5, Math.min(3.5, ai.x));
+      ai.group.position.x = ai.x;
+
+      // Face player
+      ai.group.rotation.y = player.x < ai.x ? 0 : Math.PI;
+
+      // Attack
+      if (dist < 1.5 && ai.cooldown <= 0 && ai.stunned <= 0) {
+        const roll = Math.random();
+        if (roll < 0.15) {
+          ai.blocking = true;
+          setTimeout(() => { ai.blocking = false; }, 500 + Math.random() * 500);
+        } else if (roll < 0.5) {
+          performAttack(ai, player, 'punch');
+        } else if (roll < 0.8) {
+          performAttack(ai, player, 'kick');
+        } else {
+          performAttack(ai, player, 'special');
+        }
+      }
+    }
+
+    // ===== ROUND LOGIC =====
+    function endRound(winner) {
+      gameState.paused = true;
+      battleActive = false;
+      setTimeout(() => {
+        const overlay = document.getElementById('ko-overlay');
+        const winnerChar = winner === 'p1' ? gameState.p1.char : gameState.p2.char;
+        document.getElementById('winner-text').textContent = winnerChar.name + ' WINS!';
+        overlay.classList.add('active');
+      }, 500);
+    }
+
+    function showRoundStart() {
+      return new Promise(resolve => {
+        const overlay = document.getElementById('round-overlay');
+        const text = document.getElementById('round-text');
+        text.textContent = 'Round ' + gameState.round;
+        overlay.classList.add('active');
+        setTimeout(() => {
+          text.textContent = 'FIGHT!';
+          text.style.color = '#d74242';
+          setTimeout(() => {
+            overlay.classList.remove('active');
+            text.style.color = '';
+            resolve();
+          }, 800);
+        }, 1200);
+      });
+    }
+
+    // ===== BATTLE LOOP =====
+    let lastFrameTime = 0;
+    function battleLoop(timestamp) {
+      // Proper delta time instead of hardcoded 16ms
+      const dt = lastFrameTime ? Math.min(timestamp - lastFrameTime, 50) : 16;
+      lastFrameTime = timestamp;
+
+      if (!battleActive && !gameState?.paused) {
+        if (battleRenderer) battleRenderer.render(battleScene, battleCamera);
+        requestAnimationFrame(battleLoop);
+        return;
+      }
+
+      const now = Date.now();
+
+      if (gameState && !gameState.paused) {
+        // Timer
+        if (now - gameState.lastTimerTick >= 1000) {
+          gameState.timer = Math.max(0, gameState.timer - 1);
+          gameState.lastTimerTick = now;
+          if (gameState.timer <= 0) {
+            endRound(gameState.p1.hp >= gameState.p2.hp ? 'p1' : 'p2');
+          }
+        }
+
+        // Cooldowns
+        gameState.p1.cooldown = Math.max(0, gameState.p1.cooldown - dt);
+        gameState.p1.stunned = Math.max(0, gameState.p1.stunned - dt);
+
+        // Player input
+        const p1 = gameState.p1;
+        const moveSpeed = 2.5 * (p1.char.spd / 10);
+        if (keys['KeyA'] || keys['ArrowLeft']) {
+          p1.x = Math.max(-3.5, p1.x - moveSpeed * dt / 1000);
+          p1.group.rotation.y = Math.PI;
+        }
+        if (keys['KeyD'] || keys['ArrowRight']) {
+          p1.x = Math.min(3.5, p1.x + moveSpeed * dt / 1000);
+          p1.group.rotation.y = 0;
+        }
+        p1.group.position.x = p1.x;
+
+        // Face opponent
+        if (!keys['KeyA'] && !keys['ArrowLeft'] && !keys['KeyD'] && !keys['ArrowRight']) {
+          p1.group.rotation.y = gameState.p2.x > p1.x ? 0 : Math.PI;
+        }
+
+        p1.blocking = keys['Space'];
+
+        // AI
+        updateAI(dt);
+
+        // --- COLLIDER SYSTEM: body collision response ---
+        resolveBodyCollision(gameState.p1, gameState.p2);
+
+        // --- Debug collider visualization ---
+        if (debugColliders) drawDebugColliders();
+
+        updateHealthBars();
+      }
+
+      if (battleRenderer && battleScene && battleCamera) {
+        battleRenderer.render(battleScene, battleCamera);
+      }
+      requestAnimationFrame(battleLoop);
+    }
+
+    // ===== INPUT =====
+    document.addEventListener('keydown', (e) => {
+      keys[e.code] = true;
+
+      // Toggle debug colliders with backtick
+      if (e.code === 'Backquote') {
+        debugColliders = !debugColliders;
+        if (!debugColliders) clearDebugHelpers();
+      }
+
+      if (!battleActive || !gameState || gameState.paused) return;
+      const p1 = gameState.p1;
+      const p2 = gameState.p2;
+
+      if (e.code === 'KeyJ') performAttack(p1, p2, 'punch');
+      if (e.code === 'KeyK') performAttack(p1, p2, 'kick');
+      if (e.code === 'KeyL') performAttack(p1, p2, 'special');
+      if (e.code === 'Escape') backToSelect();
+    });
+
+    document.addEventListener('keyup', (e) => {
+      keys[e.code] = false;
+    });
+
+    // ===== NAVIGATION =====
+    window.showCharSelect = function() {
+      document.getElementById('title-screen').classList.remove('active');
+      document.getElementById('char-select').classList.add('active');
+      selectedP1 = null; selectedP2 = null;
+      selectingPlayer = 1;
+      document.getElementById('select-phase').textContent = 'SELECT PLAYER 1 WARRIOR';
+      document.getElementById('start-fight-btn').disabled = true;
+      buildCharList();
+      if (!previewRenderer) initPreviewRenderer();
+      // Show first character
+      if (CHARACTERS.length > 0) showCharacterInPreview(CHARACTERS[0].id);
+    };
+
+    window.showViewer = function() {
+      // Same as char select but without fight button
+      window.showCharSelect();
+    };
+
+    window.backToTitle = function() {
+      document.getElementById('char-select').classList.remove('active');
+      document.getElementById('battle-arena').classList.remove('active');
+      document.getElementById('ko-overlay').classList.remove('active');
+      document.getElementById('round-overlay').classList.remove('active');
+      document.getElementById('title-screen').classList.add('active');
+      battleActive = false;
+      if (gameState) gameState.paused = true;
+    };
+
+    window.backToSelect = function() {
+      document.getElementById('battle-arena').classList.remove('active');
+      document.getElementById('ko-overlay').classList.remove('active');
+      document.getElementById('round-overlay').classList.remove('active');
+      battleActive = false;
+      if (gameState) gameState.paused = true;
+      window.showCharSelect();
+    };
+
+    window.startFight = async function() {
+      if (!selectedP1 || !selectedP2) return;
+      document.getElementById('char-select').classList.remove('active');
+      document.getElementById('battle-arena').classList.add('active');
+
+      initBattle();
+      battleLoop();
+
+      await showRoundStart();
+      battleActive = true;
+      gameState.paused = false;
+      gameState.lastTimerTick = Date.now();
+    };
+
+    // ===== RESIZE =====
+    window.addEventListener('resize', () => {
+      if (previewRenderer && document.getElementById('char-select').classList.contains('active')) {
+        const parent = document.getElementById('preview-canvas').parentElement;
+        previewRenderer.setSize(parent.clientWidth, parent.clientHeight);
+        previewCamera.aspect = parent.clientWidth / parent.clientHeight;
+        previewCamera.updateProjectionMatrix();
+      }
+      if (battleRenderer && document.getElementById('battle-arena').classList.contains('active')) {
+        battleRenderer.setSize(window.innerWidth, window.innerHeight);
+        battleCamera.aspect = window.innerWidth / window.innerHeight;
+        battleCamera.updateProjectionMatrix();
+      }
+    });
+  </script>
+</body>
+</html>
