@@ -1007,8 +1007,142 @@
     });
 
     // Per-character attack overrides (merge onto defaults)
-    const CHARACTER_ATTACK_OVERRIDES = {};
-    // Example: CHARACTER_ATTACK_OVERRIDES.Model001 = { attack_3: { baseDmg: 8 } };
+    // Weaponless characters get ranged projectile finishers/specials.
+    // All characters get at least ranged specials (attack_9/10) for variety.
+    const CHARACTER_ATTACK_OVERRIDES = {
+      // --- Cao Pi (Swordsman) — fast sword, red wave specials ---
+      Model001: {
+        attack_1: { baseDmg: 3, hitbox: { fwd: 0.50, up: 0.30, wide: 0.22 } },
+        attack_2: { baseDmg: 5, hitbox: { fwd: 0.55, up: 0.30, wide: 0.25 } },
+        attack_3: { baseDmg: 7, hitbox: { fwd: 0.60, up: 0.35, wide: 0.30 }, knockback: 0.14 },
+        attack_4: { baseDmg: 7, hitbox: { fwd: 0.65, up: 0.40, wide: 0.35 } },
+        attack_5: { baseDmg: 9, hitbox: { fwd: 0.70, up: 0.40, wide: 0.38 } },
+        attack_6: { baseDmg: 11, hitbox: { fwd: 0.75, up: 0.45, wide: 0.42 }, knockback: 0.28 },
+        attack_9:  { baseDmg: 11, ranged: true, projType: 'wave', projSpeed: 4.0, projSize: 0.18, projColor: 0xcc3333, projLifetime: 1000, knockback: 0.25 },
+        attack_10: { baseDmg: 15, ranged: true, projType: 'wave', projSpeed: 5.0, projSize: 0.25, projColor: 0xff4444, projLifetime: 1200, projPiercing: true, knockback: 0.35 },
+      },
+      // --- Cao Zijian (Strategist) — NO WEAPON, heavy ranged, purple arcane ---
+      Model002: {
+        attack_1: { baseDmg: 3, hitbox: { fwd: 0.40, up: 0.28, wide: 0.22 } },
+        attack_2: { baseDmg: 4, hitbox: { fwd: 0.45, up: 0.28, wide: 0.24 } },
+        attack_3: { baseDmg: 7, ranged: true, projType: 'bolt', projSpeed: 4.5, projSize: 0.12, projColor: 0x8855cc, projLifetime: 900, knockback: 0.10 },
+        attack_4: { baseDmg: 5, hitbox: { fwd: 0.50, up: 0.35, wide: 0.30 } },
+        attack_5: { baseDmg: 7, hitbox: { fwd: 0.55, up: 0.38, wide: 0.32 } },
+        attack_6: { baseDmg: 10, ranged: true, projType: 'energy_ball', projSpeed: 3.5, projSize: 0.20, projColor: 0xaa66dd, projLifetime: 1100, knockback: 0.22, knocksDown: true },
+        attack_9:  { baseDmg: 12, ranged: true, projType: 'energy_ball', projSpeed: 3.0, projSize: 0.22, projColor: 0x9944ee, projLifetime: 1400, knockback: 0.30, knocksDown: true },
+        attack_10: { baseDmg: 16, ranged: true, projType: 'beam', projSpeed: 6.0, projSize: 0.28, projColor: 0xcc77ff, projLifetime: 800, projPiercing: true, knockback: 0.40, knocksDown: true },
+      },
+      // --- Dian Wei (Berserker) — axe, slow but devastating, orange shockwaves ---
+      Model003: {
+        attack_1: { baseDmg: 4, windup: 80, activeStart: 80, hitbox: { fwd: 0.50, up: 0.35, wide: 0.30 } },
+        attack_2: { baseDmg: 5, windup: 90, activeStart: 90, hitbox: { fwd: 0.55, up: 0.35, wide: 0.32 } },
+        attack_3: { baseDmg: 8, hitbox: { fwd: 0.65, up: 0.40, wide: 0.38 }, knockback: 0.15 },
+        attack_4: { baseDmg: 8, hitbox: { fwd: 0.70, up: 0.45, wide: 0.40 }, knockback: 0.18 },
+        attack_5: { baseDmg: 10, hitbox: { fwd: 0.75, up: 0.45, wide: 0.42 }, knockback: 0.22 },
+        attack_6: { baseDmg: 13, ranged: true, projType: 'shockwave', projSpeed: 2.5, projSize: 0.30, projColor: 0xdd6633, projLifetime: 800, knockback: 0.30, knocksDown: true },
+        attack_9:  { baseDmg: 13, ranged: true, projType: 'shockwave', projSpeed: 2.0, projSize: 0.35, projColor: 0xff7744, projLifetime: 1000, knockback: 0.35, knocksDown: true },
+        attack_10: { baseDmg: 18, ranged: true, projType: 'wave', projSpeed: 3.5, projSize: 0.32, projColor: 0xff5522, projLifetime: 1200, projPiercing: true, knockback: 0.45, knocksDown: true },
+      },
+      // --- Diao Chan (Enchantress) — fan, graceful, pink petal/wind ---
+      Model004: {
+        attack_1: { baseDmg: 3, windup: 50, activeStart: 50, hitbox: { fwd: 0.48, up: 0.30, wide: 0.28 } },
+        attack_2: { baseDmg: 4, windup: 55, activeStart: 55, hitbox: { fwd: 0.52, up: 0.30, wide: 0.30 } },
+        attack_3: { baseDmg: 6, hitbox: { fwd: 0.58, up: 0.35, wide: 0.35 } },
+        attack_4: { baseDmg: 6, hitbox: { fwd: 0.60, up: 0.38, wide: 0.38 } },
+        attack_5: { baseDmg: 8, ranged: true, projType: 'bolt', projSpeed: 4.0, projSize: 0.12, projColor: 0xff88cc, projLifetime: 900, knockback: 0.15 },
+        attack_6: { baseDmg: 10, ranged: true, projType: 'wave', projSpeed: 3.5, projSize: 0.20, projColor: 0xdd55aa, projLifetime: 1000, knockback: 0.22, knocksDown: true },
+        attack_9:  { baseDmg: 11, ranged: true, projType: 'energy_ball', projSpeed: 3.5, projSize: 0.20, projColor: 0xff66bb, projLifetime: 1200, knockback: 0.28, knocksDown: true },
+        attack_10: { baseDmg: 14, ranged: true, projType: 'beam', projSpeed: 5.5, projSize: 0.22, projColor: 0xff88dd, projLifetime: 900, projPiercing: true, knockback: 0.35, knocksDown: true },
+      },
+      // --- Dong Zhuo (Tyrant) — mace, slow & brutal, dark red fire ---
+      Model005: {
+        attack_1: { baseDmg: 4, windup: 80, activeStart: 80, hitbox: { fwd: 0.50, up: 0.35, wide: 0.30 } },
+        attack_2: { baseDmg: 5, windup: 90, activeStart: 90, hitbox: { fwd: 0.55, up: 0.38, wide: 0.32 } },
+        attack_3: { baseDmg: 8, hitbox: { fwd: 0.60, up: 0.40, wide: 0.35 }, knockback: 0.14 },
+        attack_4: { baseDmg: 8, hitbox: { fwd: 0.65, up: 0.42, wide: 0.38 }, knockback: 0.18 },
+        attack_5: { baseDmg: 10, hitbox: { fwd: 0.72, up: 0.45, wide: 0.40 }, knockback: 0.22 },
+        attack_6: { baseDmg: 13, hitbox: { fwd: 0.80, up: 0.50, wide: 0.45 }, knockback: 0.30, knocksDown: true },
+        attack_9:  { baseDmg: 13, ranged: true, projType: 'energy_ball', projSpeed: 2.8, projSize: 0.25, projColor: 0x992211, projLifetime: 1200, knockback: 0.32, knocksDown: true },
+        attack_10: { baseDmg: 17, ranged: true, projType: 'shockwave', projSpeed: 2.0, projSize: 0.35, projColor: 0xcc3311, projLifetime: 1000, projPiercing: true, knockback: 0.42, knocksDown: true },
+      },
+      // --- Guo Jia (Tactician) — staff/sword, balanced, blue ice/lightning ---
+      Model006: {
+        attack_1: { baseDmg: 3, hitbox: { fwd: 0.48, up: 0.30, wide: 0.24 } },
+        attack_2: { baseDmg: 4, hitbox: { fwd: 0.52, up: 0.30, wide: 0.26 } },
+        attack_3: { baseDmg: 7, ranged: true, projType: 'bolt', projSpeed: 5.0, projSize: 0.10, projColor: 0x3388cc, projLifetime: 800, knockback: 0.10 },
+        attack_4: { baseDmg: 6, hitbox: { fwd: 0.58, up: 0.38, wide: 0.32 } },
+        attack_5: { baseDmg: 8, hitbox: { fwd: 0.62, up: 0.40, wide: 0.35 } },
+        attack_6: { baseDmg: 10, ranged: true, projType: 'bolt', projSpeed: 4.5, projSize: 0.14, projColor: 0x44aaff, projLifetime: 1000, knockback: 0.20, knocksDown: true },
+        attack_9:  { baseDmg: 11, ranged: true, projType: 'energy_ball', projSpeed: 4.0, projSize: 0.18, projColor: 0x2266ee, projLifetime: 1100, knockback: 0.28, knocksDown: true },
+        attack_10: { baseDmg: 15, ranged: true, projType: 'beam', projSpeed: 6.5, projSize: 0.24, projColor: 0x55bbff, projLifetime: 700, projPiercing: true, knockback: 0.38, knocksDown: true },
+      },
+      // --- Huang Gai (Vanguard) — UNARMED, brawler, orange fire ---
+      Model007: {
+        attack_1: { baseDmg: 4, windup: 50, activeStart: 50, hitbox: { fwd: 0.42, up: 0.28, wide: 0.24 } },
+        attack_2: { baseDmg: 5, windup: 55, activeStart: 55, hitbox: { fwd: 0.46, up: 0.30, wide: 0.26 } },
+        attack_3: { baseDmg: 8, ranged: true, projType: 'energy_ball', projSpeed: 3.5, projSize: 0.16, projColor: 0xff8833, projLifetime: 900, knockback: 0.12 },
+        attack_4: { baseDmg: 7, hitbox: { fwd: 0.48, up: 0.35, wide: 0.30 }, knockback: 0.16 },
+        attack_5: { baseDmg: 9, hitbox: { fwd: 0.52, up: 0.38, wide: 0.34 }, knockback: 0.20 },
+        attack_6: { baseDmg: 12, ranged: true, projType: 'shockwave', projSpeed: 2.5, projSize: 0.28, projColor: 0xcc8833, projLifetime: 800, knockback: 0.25, knocksDown: true },
+        attack_9:  { baseDmg: 12, ranged: true, projType: 'energy_ball', projSpeed: 3.0, projSize: 0.22, projColor: 0xff6622, projLifetime: 1200, knockback: 0.30, knocksDown: true },
+        attack_10: { baseDmg: 16, ranged: true, projType: 'wave', projSpeed: 4.0, projSize: 0.28, projColor: 0xff9944, projLifetime: 1000, projPiercing: true, knockback: 0.38, knocksDown: true },
+      },
+      // --- Huang Yueying (Inventor) — crossbow, teal energy ---
+      Model008: {
+        attack_1: { baseDmg: 3, hitbox: { fwd: 0.45, up: 0.28, wide: 0.22 } },
+        attack_2: { baseDmg: 4, hitbox: { fwd: 0.50, up: 0.30, wide: 0.25 } },
+        attack_3: { baseDmg: 6, hitbox: { fwd: 0.55, up: 0.32, wide: 0.28 } },
+        attack_4: { baseDmg: 6, hitbox: { fwd: 0.58, up: 0.35, wide: 0.30 } },
+        attack_5: { baseDmg: 8, ranged: true, projType: 'bolt', projSpeed: 5.5, projSize: 0.10, projColor: 0x44bb88, projLifetime: 800, knockback: 0.12 },
+        attack_6: { baseDmg: 10, hitbox: { fwd: 0.65, up: 0.40, wide: 0.35 }, knockback: 0.22 },
+        attack_9:  { baseDmg: 11, ranged: true, projType: 'bolt', projSpeed: 6.0, projSize: 0.14, projColor: 0x33cc88, projLifetime: 1000, knockback: 0.25, knocksDown: true },
+        attack_10: { baseDmg: 15, ranged: true, projType: 'energy_ball', projSpeed: 4.0, projSize: 0.20, projColor: 0x55ddaa, projLifetime: 1200, projPiercing: true, knockback: 0.35, knocksDown: true },
+      },
+      // --- Xu Kui (Shadow Blade) — NO WEAPON, assassin, dark purple shadow ---
+      Model009: {
+        attack_1: { baseDmg: 4, windup: 45, activeStart: 45, hitbox: { fwd: 0.48, up: 0.28, wide: 0.24 } },
+        attack_2: { baseDmg: 5, windup: 50, activeStart: 50, hitbox: { fwd: 0.52, up: 0.30, wide: 0.26 } },
+        attack_3: { baseDmg: 7, ranged: true, projType: 'bolt', projSpeed: 5.5, projSize: 0.10, projColor: 0x6644aa, projLifetime: 800, knockback: 0.10 },
+        attack_4: { baseDmg: 7, windup: 100, activeStart: 100, hitbox: { fwd: 0.55, up: 0.38, wide: 0.30 } },
+        attack_5: { baseDmg: 9, hitbox: { fwd: 0.60, up: 0.40, wide: 0.34 } },
+        attack_6: { baseDmg: 11, ranged: true, projType: 'wave', projSpeed: 4.0, projSize: 0.18, projColor: 0x8855cc, projLifetime: 900, knockback: 0.22, knocksDown: true },
+        attack_9:  { baseDmg: 12, ranged: true, projType: 'energy_ball', projSpeed: 4.5, projSize: 0.18, projColor: 0x7733bb, projLifetime: 1000, knockback: 0.28, knocksDown: true },
+        attack_10: { baseDmg: 16, ranged: true, projType: 'beam', projSpeed: 7.0, projSize: 0.20, projColor: 0x9955dd, projLifetime: 700, projPiercing: true, knockback: 0.38, knocksDown: true },
+      },
+      // --- Liu Bei (Warlord) — dual sword, balanced, green dragon energy ---
+      Model010: {
+        attack_1: { baseDmg: 3, hitbox: { fwd: 0.48, up: 0.30, wide: 0.26 } },
+        attack_2: { baseDmg: 5, hitbox: { fwd: 0.54, up: 0.32, wide: 0.28 } },
+        attack_3: { baseDmg: 7, hitbox: { fwd: 0.60, up: 0.36, wide: 0.32 }, knockback: 0.14 },
+        attack_4: { baseDmg: 7, hitbox: { fwd: 0.62, up: 0.40, wide: 0.35 } },
+        attack_5: { baseDmg: 9, hitbox: { fwd: 0.68, up: 0.42, wide: 0.38 }, knockback: 0.20 },
+        attack_6: { baseDmg: 11, hitbox: { fwd: 0.75, up: 0.45, wide: 0.42 }, knockback: 0.26, knocksDown: true },
+        attack_9:  { baseDmg: 11, ranged: true, projType: 'energy_ball', projSpeed: 3.5, projSize: 0.20, projColor: 0x33aa33, projLifetime: 1200, knockback: 0.28, knocksDown: true },
+        attack_10: { baseDmg: 15, ranged: true, projType: 'wave', projSpeed: 4.5, projSize: 0.26, projColor: 0x44cc44, projLifetime: 1000, projPiercing: true, knockback: 0.38, knocksDown: true },
+      },
+      // --- Lu Bu (God of War) — NO WEAPON, overwhelming power, red war energy ---
+      Model011: {
+        attack_1: { baseDmg: 5, hitbox: { fwd: 0.50, up: 0.32, wide: 0.28 } },
+        attack_2: { baseDmg: 6, hitbox: { fwd: 0.55, up: 0.34, wide: 0.30 } },
+        attack_3: { baseDmg: 9, ranged: true, projType: 'wave', projSpeed: 4.0, projSize: 0.20, projColor: 0xcc2222, projLifetime: 1000, knockback: 0.14 },
+        attack_4: { baseDmg: 8, hitbox: { fwd: 0.60, up: 0.42, wide: 0.35 }, knockback: 0.18 },
+        attack_5: { baseDmg: 10, hitbox: { fwd: 0.68, up: 0.45, wide: 0.40 }, knockback: 0.22 },
+        attack_6: { baseDmg: 14, ranged: true, projType: 'shockwave', projSpeed: 2.5, projSize: 0.32, projColor: 0xff3333, projLifetime: 900, knockback: 0.32, knocksDown: true },
+        attack_9:  { baseDmg: 14, ranged: true, projType: 'energy_ball', projSpeed: 3.0, projSize: 0.25, projColor: 0xee2222, projLifetime: 1400, knockback: 0.35, knocksDown: true },
+        attack_10: { baseDmg: 20, ranged: true, projType: 'beam', projSpeed: 5.0, projSize: 0.30, projColor: 0xff4444, projLifetime: 1000, projPiercing: true, knockback: 0.50, knocksDown: true },
+      },
+      // --- Lu Meng (Blade Master) — sword, precise, blue blade waves ---
+      Model012: {
+        attack_1: { baseDmg: 4, windup: 55, activeStart: 55, hitbox: { fwd: 0.48, up: 0.30, wide: 0.24 } },
+        attack_2: { baseDmg: 5, windup: 60, activeStart: 60, hitbox: { fwd: 0.54, up: 0.32, wide: 0.26 } },
+        attack_3: { baseDmg: 7, hitbox: { fwd: 0.58, up: 0.36, wide: 0.30 }, knockback: 0.14 },
+        attack_4: { baseDmg: 7, hitbox: { fwd: 0.62, up: 0.40, wide: 0.34 } },
+        attack_5: { baseDmg: 9, hitbox: { fwd: 0.68, up: 0.42, wide: 0.36 }, knockback: 0.20 },
+        attack_6: { baseDmg: 11, hitbox: { fwd: 0.74, up: 0.45, wide: 0.40 }, knockback: 0.26, knocksDown: true },
+        attack_9:  { baseDmg: 11, ranged: true, projType: 'wave', projSpeed: 4.5, projSize: 0.18, projColor: 0x2266bb, projLifetime: 1000, knockback: 0.28, knocksDown: true },
+        attack_10: { baseDmg: 15, ranged: true, projType: 'wave', projSpeed: 5.5, projSize: 0.24, projColor: 0x3388dd, projLifetime: 900, projPiercing: true, knockback: 0.36, knocksDown: true },
+      },
+    };
 
     function getAttackDef(fighter, attackState) {
       const charId = fighter.char?.id;
@@ -1035,12 +1169,31 @@
       attack_10: {}, // terminal — combo finisher
     });
 
-    const CHARACTER_COMBO_OVERRIDES = {};
-    // Example: CHARACTER_COMBO_OVERRIDES.Model001 = { attack_1: { light: 'attack_2', heavy: 'attack_7', special: 'attack_9' } };
+    const CHARACTER_COMBO_OVERRIDES = {
+      // Weaponless: light finisher cancels into special ranged
+      Model002: { attack_3: { special: 'attack_9' } },                                   // Cao Zijian
+      Model006: { attack_3: { special: 'attack_9' } },                                   // Guo Jia
+      Model009: { attack_3: { special: 'attack_9' } },                                   // Xu Kui
+      // Weaponless + heavy: both light→special and heavy→ultimate cancels
+      Model007: { attack_3: { special: 'attack_9' }, attack_6: { special: 'attack_10' } }, // Huang Gai
+      Model011: { attack_3: { special: 'attack_9' }, attack_6: { special: 'attack_10' } }, // Lu Bu
+      // Heavy hitters: heavy finisher cancels into ultimate
+      Model003: { attack_6: { special: 'attack_10' } },                                  // Dian Wei
+      Model005: { attack_6: { special: 'attack_10' } },                                  // Dong Zhuo
+    };
 
     function getComboRoutes(fighter) {
       const charId = fighter.char?.id;
-      return CHARACTER_COMBO_OVERRIDES[charId] || DEFAULT_COMBO_ROUTES;
+      const override = CHARACTER_COMBO_OVERRIDES[charId];
+      if (!override) return DEFAULT_COMBO_ROUTES;
+      // Shallow-merge per state so overrides only need changed entries
+      const merged = {};
+      for (const key of Object.keys(DEFAULT_COMBO_ROUTES)) {
+        merged[key] = override[key]
+          ? { ...DEFAULT_COMBO_ROUTES[key], ...override[key] }
+          : DEFAULT_COMBO_ROUTES[key];
+      }
+      return merged;
     }
 
     // ===== PARRY SYSTEM =====
@@ -1454,26 +1607,64 @@
         const def = getAttackDef(fighter, state);
         if (def) {
           const power = def.category === 'special' ? 2.0 : def.category === 'heavy' ? 1.4 : 1.0;
-          const isKick = (state === 'attack_4' || state === 'attack_5' || state === 'attack_6');
-          if (t < def.activeStart) {
-            // Windup: lean back, coil
-            const w = t / def.activeStart;
-            g.rotation.x = w * 0.08 * power;
-            g.position.y = by - w * 0.02 * power;
-            if (def.category === 'special') g.rotation.z = Math.sin(w * Math.PI * 2) * 0.04;
-          } else if (t <= def.activeEnd) {
-            // Strike: snap forward
-            const a = (t - def.activeStart) / (def.activeEnd - def.activeStart);
-            g.rotation.x = -0.15 * power * (1 - a * 0.5);
-            g.position.y = by + 0.03 * power;
-            if (isKick) g.rotation.z = -0.08 * a;
-            if (def.category === 'special') g.rotation.z = Math.sin(t * 0.02) * 0.06;
+
+          if (def.ranged) {
+            // --- Ranged attack animations ---
+            const isShockwave = def.projType === 'shockwave';
+            const isBeam = def.projType === 'beam';
+            if (t < def.activeStart) {
+              // Charge: lean back hard, coil energy
+              const w = t / def.activeStart;
+              g.rotation.x = w * 0.18 * power;
+              g.position.y = by - w * 0.04 * power;
+              g.rotation.z = Math.sin(w * Math.PI * 3) * 0.05 * power;
+              if (isShockwave) g.position.y = by + w * 0.06; // rise before stomp
+            } else if (t <= def.activeEnd) {
+              // Release
+              const a = (t - def.activeStart) / (def.activeEnd - def.activeStart);
+              if (isShockwave) {
+                // Stomp: slam down hard
+                g.rotation.x = 0.2 * power * (1 - a * 0.6);
+                g.position.y = by - 0.08 * power * (1 - a);
+              } else if (isBeam) {
+                // Beam: hold extended pose with tremor
+                g.rotation.x = -0.20 * power;
+                g.position.y = by + 0.04 * power;
+                g.rotation.z = Math.sin(t * 0.04) * 0.03;
+              } else {
+                // General ranged: snap forward hard
+                g.rotation.x = -0.22 * power * (1 - a * 0.4);
+                g.position.y = by + 0.05 * power;
+                g.rotation.z = Math.sin(t * 0.025) * 0.04;
+              }
+            } else {
+              // Recovery
+              const r = Math.min(1, (t - def.activeEnd) / (def.recoveryEnd - def.activeEnd));
+              const snap = isShockwave ? 0.2 : 0.22;
+              g.rotation.x = -snap * power * (1 - r);
+              g.position.y = by + (isShockwave ? -0.08 : 0.05) * power * (1 - r);
+              g.rotation.z = 0;
+            }
           } else {
-            // Recovery: return to neutral
-            const r = Math.min(1, (t - def.activeEnd) / (def.recoveryEnd - def.activeEnd));
-            g.rotation.x = -0.15 * power * (1 - r);
-            g.position.y = by + 0.03 * power * (1 - r);
-            if (isKick) g.rotation.z = -0.08 * (1 - r);
+            // --- Melee attack animations ---
+            const isKick = (state === 'attack_4' || state === 'attack_5' || state === 'attack_6');
+            if (t < def.activeStart) {
+              const w = t / def.activeStart;
+              g.rotation.x = w * 0.08 * power;
+              g.position.y = by - w * 0.02 * power;
+              if (def.category === 'special') g.rotation.z = Math.sin(w * Math.PI * 2) * 0.04;
+            } else if (t <= def.activeEnd) {
+              const a = (t - def.activeStart) / (def.activeEnd - def.activeStart);
+              g.rotation.x = -0.15 * power * (1 - a * 0.5);
+              g.position.y = by + 0.03 * power;
+              if (isKick) g.rotation.z = -0.08 * a;
+              if (def.category === 'special') g.rotation.z = Math.sin(t * 0.02) * 0.06;
+            } else {
+              const r = Math.min(1, (t - def.activeEnd) / (def.recoveryEnd - def.activeEnd));
+              g.rotation.x = -0.15 * power * (1 - r);
+              g.position.y = by + 0.03 * power * (1 - r);
+              if (isKick) g.rotation.z = -0.08 * (1 - r);
+            }
           }
         }
         return;
@@ -1773,6 +1964,212 @@
         p.mesh.material.dispose();
       }
       vfxParticles = [];
+    }
+
+    // ===== PROJECTILE SYSTEM =====
+    // Ranged attacks spawn projectiles that travel forward and resolve on collision.
+    let projectiles = [];
+
+    // Geometry pool for projectile VFX types
+    const _projGeo = {
+      energy_ball: new THREE.SphereGeometry(1, 12, 8),
+      wave:        new THREE.TorusGeometry(1, 0.12, 4, 24, Math.PI * 1.2),
+      bolt:        new THREE.CylinderGeometry(0.08, 0.08, 1, 6),
+      shockwave:   new THREE.RingGeometry(0.3, 1, 24),
+      beam:        new THREE.PlaneGeometry(1, 0.25),
+    };
+    // Rotate bolt to lay horizontal (Z-forward)
+    _projGeo.bolt.rotateZ(Math.PI / 2);
+    _projGeo.shockwave.rotateX(-Math.PI / 2);
+
+    function spawnProjectile(attacker, def, attackState) {
+      const facingRight = attacker.group.rotation.y < Math.PI / 2;
+      const dir = facingRight ? 1 : -1;
+      const spawnX = attacker.x + dir * (attacker.bounds.hw + 0.15);
+      const spawnY = attacker.bounds.hh; // mid-body height
+
+      const projType = def.projType || 'energy_ball';
+      const projSize = def.projSize || 0.15;
+      const projColor = def.projColor || 0xeeb72b;
+      const projSpeed = def.projSpeed || 3.5;
+      const projLifetime = def.projLifetime || 1200;
+
+      const geo = _projGeo[projType] || _projGeo.energy_ball;
+      const mat = new THREE.MeshBasicMaterial({
+        color: projColor, transparent: true, opacity: 0.92, side: THREE.DoubleSide,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.scale.setScalar(projSize);
+      mesh.position.set(spawnX, spawnY, 0.05);
+      if (projType === 'wave') {
+        mesh.rotation.z = facingRight ? -0.2 : Math.PI + 0.2;
+      } else if (projType === 'beam') {
+        mesh.scale.set(projSize * 3, projSize, 1);
+      }
+      battleScene.add(mesh);
+
+      // Trailing glow (additive inner core)
+      const glowMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.5, side: THREE.DoubleSide,
+      });
+      const glowMesh = new THREE.Mesh(geo, glowMat);
+      glowMesh.scale.setScalar(projSize * 0.6);
+      glowMesh.position.copy(mesh.position);
+      battleScene.add(glowMesh);
+
+      projectiles.push({
+        mesh,
+        glowMesh,
+        owner: attacker,
+        x: spawnX,
+        y: spawnY,
+        vx: dir * projSpeed,
+        damage: def.baseDmg + Math.floor(attacker.char.atk * def.dmgScale),
+        knockback: def.knockback,
+        knocksDown: !!def.knocksDown,
+        hitboxHW: projSize * 1.2,  // half-width of collision box
+        hitboxHH: projSize * 1.0,
+        life: 0,
+        maxLife: projLifetime,
+        projType,
+        projColor,
+        piercing: !!def.projPiercing,
+        hasHit: false,
+        attackState,
+      });
+    }
+
+    function resolveProjectileHit(proj, defender) {
+      if (proj.hasHit && !proj.piercing) return;
+      // Build projectile hitbox
+      const pBox = new THREE.Box3(
+        new THREE.Vector3(proj.x - proj.hitboxHW, proj.y - proj.hitboxHH, -0.3),
+        new THREE.Vector3(proj.x + proj.hitboxHW, proj.y + proj.hitboxHH, 0.3)
+      );
+      const defBox = getBodyCollider(defender);
+      if (!pBox.intersectsBox(defBox)) return false;
+
+      proj.hasHit = true;
+
+      // Block check (block reduces to chip damage, no parry on projectiles)
+      let dmg = proj.damage;
+      if (defender.blocking) {
+        dmg = Math.max(1, Math.floor(dmg * 0.15));
+      } else {
+        dmg = Math.max(1, dmg - Math.floor(defender.char.def * 0.3));
+      }
+      dmg += Math.floor(Math.random() * 3) - 1;
+      dmg = Math.max(1, dmg);
+
+      // Combo tracking
+      const now = Date.now();
+      if (now - defender.lastHit < 1500) {
+        proj.owner.combo++;
+        if (proj.owner.combo >= 3) dmg = Math.floor(dmg * 1.3);
+      } else {
+        proj.owner.combo = 1;
+      }
+      defender.lastHit = now;
+
+      defender.hp = Math.max(0, defender.hp - dmg);
+
+      // State transitions
+      if (defender.combat) {
+        if (defender.hp <= 0) {
+          setFighterState(defender, FIGHTER_STATES.KO, { force: true });
+        } else if (proj.knocksDown && !defender.blocking) {
+          setFighterState(defender, FIGHTER_STATES.KNOCKDOWN, { force: true });
+        } else if (!defender.blocking) {
+          setFighterState(defender, FIGHTER_STATES.HIT_REACT, { force: true });
+        }
+      }
+
+      // VFX on impact
+      spawnImpactSparks(proj.x, proj.y, 8, proj.projColor);
+      const shakeAmt = proj.knocksDown ? 0.18 : 0.08;
+      triggerScreenShake(shakeAmt);
+
+      const isP1Target = defender === gameState.p1;
+      showDamage(dmg, isP1Target);
+      showCombo(isP1Target ? 'p2' : 'p1', proj.owner.combo);
+
+      // Knockback
+      if (!defender.blocking) {
+        const dir = defender.x > proj.owner.x ? proj.knockback : -proj.knockback;
+        defender.x = Math.max(-3.5, Math.min(3.5, defender.x + dir));
+        defender.group.position.x = defender.x;
+      }
+
+      updateHealthBars();
+      if (defender.hp <= 0) {
+        endRound(proj.owner === gameState.p1 ? 'p1' : 'p2');
+      }
+
+      return true;
+    }
+
+    function updateProjectiles(dt) {
+      if (!gameState) return;
+      for (let i = projectiles.length - 1; i >= 0; i--) {
+        const p = projectiles[i];
+        p.life += dt;
+        const t = p.life / p.maxLife;
+
+        // Move
+        p.x += p.vx * dt / 1000;
+        p.mesh.position.x = p.x;
+        p.glowMesh.position.x = p.x;
+
+        // Animate
+        p.mesh.material.opacity = 0.92 * (1 - t * 0.5);
+        p.glowMesh.material.opacity = 0.5 * (1 - t * 0.7);
+        if (p.projType === 'energy_ball') {
+          p.mesh.rotation.x += dt * 0.005;
+          p.mesh.rotation.y += dt * 0.008;
+        } else if (p.projType === 'wave') {
+          const pulse = 1 + Math.sin(p.life * 0.015) * 0.15;
+          p.mesh.scale.setScalar(p.hitboxHW * pulse);
+        } else if (p.projType === 'shockwave') {
+          const expand = 1 + t * 2;
+          p.mesh.scale.set(p.hitboxHW * expand, 1, p.hitboxHW * expand);
+          p.mesh.position.y = 0.05;
+          p.glowMesh.position.y = 0.05;
+          p.glowMesh.scale.copy(p.mesh.scale).multiplyScalar(0.6);
+        } else if (p.projType === 'bolt') {
+          // Trail sparks
+          if (Math.random() < 0.3) {
+            spawnImpactSparks(p.x, p.y, 1, p.projColor);
+          }
+        } else if (p.projType === 'beam') {
+          const stretch = 1 + t * 1.5;
+          p.mesh.scale.x = p.hitboxHW * 3 * stretch;
+        }
+
+        // Collision check against opponent
+        const defender = p.owner === gameState.p1 ? gameState.p2 : gameState.p1;
+        if (!p.hasHit || p.piercing) {
+          resolveProjectileHit(p, defender);
+        }
+
+        // Remove if expired, hit (non-piercing), or off-screen
+        if (t >= 1 || (p.hasHit && !p.piercing) || Math.abs(p.x) > 6) {
+          battleScene.remove(p.mesh);
+          battleScene.remove(p.glowMesh);
+          p.mesh.material.dispose();
+          p.glowMesh.material.dispose();
+          projectiles.splice(i, 1);
+        }
+      }
+    }
+
+    function clearProjectiles() {
+      for (const p of projectiles) {
+        battleScene.remove(p.mesh);
+        battleScene.remove(p.glowMesh);
+        p.mesh.material.dispose();
+        p.glowMesh.material.dispose();
+      }
+      projectiles = [];
     }
 
     // ===== SCREEN SHAKE =====
@@ -2481,6 +2878,17 @@
       const def = getAttackDef(attacker, attackState);
       if (!def) return;
 
+      // --- RANGED ATTACK: spawn projectile instead of melee hitbox ---
+      if (def.ranged) {
+        spawnProjectile(attacker, def, attackState);
+        // Spawn VFX at attacker (charging release effect)
+        const facingRight = attacker.group.rotation.y < Math.PI / 2;
+        spawnSlashVFX(attacker.x + (facingRight ? 0.3 : -0.3), attacker.bounds.hh, facingRight, def.projColor || 0xeeb72b);
+        spawnImpactSparks(attacker.x, attacker.bounds.hh, 4, def.projColor || 0xeeb72b);
+        triggerScreenShake(def.category === 'special' ? 0.12 : 0.05);
+        return;
+      }
+
       // --- Hitbox range check: attack must physically reach defender ---
       const attackBox = getAttackHitbox(attacker, attackState);
       const defenderBody = getBodyCollider(defender);
@@ -2788,6 +3196,7 @@
         if (gameState.p1.animation?.mixer) gameState.p1.animation.mixer.update(dt / 1000);
         if (gameState.p2.animation?.mixer) gameState.p2.animation.mixer.update(dt / 1000);
         updateVFX(dt);
+        updateProjectiles(dt);
         updateBattleCamera(dt);
 
         // Debug state overlay
@@ -2866,6 +3275,7 @@
       document.getElementById('round-overlay').classList.remove('active');
       battleActive = false;
       if (gameState) gameState.paused = true;
+      clearProjectiles();
       window.showCharSelect();
     };
 
