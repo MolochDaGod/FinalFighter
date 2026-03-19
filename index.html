@@ -612,18 +612,18 @@
 
     // ===== CHARACTER DATA =====
     const CHARACTERS = [
-      { id: 'Model001', name: 'Cao Pi', class: 'Swordsman', icon: 'CP', atk: 7, def: 6, spd: 8, meshPrefix: 'Model001', glb: './characters/Model001.glb', color: '#cc3333' },
-      { id: 'Model002', name: 'Cao Zijian', class: 'Strategist', icon: 'CZ', atk: 5, def: 7, spd: 7, meshPrefix: 'Model002', glb: './characters/Model002.glb', color: '#8855cc' },
-      { id: 'Model003', name: 'Dian Wei', class: 'Berserker', icon: 'DW', atk: 10, def: 8, spd: 4, meshPrefix: 'Model003', glb: './characters/Model003.glb', color: '#dd6633' },
-      { id: 'Model004', name: 'Diao Chan', class: 'Enchantress', icon: 'DC', atk: 6, def: 5, spd: 9, meshPrefix: 'Model004', glb: './characters/Model004.glb', color: '#dd55aa' },
-      { id: 'Model005', name: 'Dong Zhuo', class: 'Tyrant', icon: 'DZ', atk: 9, def: 9, spd: 3, meshPrefix: 'Model005', glb: './characters/Model005.glb', color: '#884422' },
-      { id: 'Model006', name: 'Guo Jia', class: 'Tactician', icon: 'GJ', atk: 6, def: 6, spd: 8, meshPrefix: 'Model006', glb: './characters/Model006.glb', color: '#3388cc' },
-      { id: 'Model007', name: 'Huang Gai', class: 'Vanguard', icon: 'HG', atk: 8, def: 8, spd: 5, meshPrefix: 'Model007', glb: './characters/Model007.glb', color: '#cc8833' },
-      { id: 'Model008', name: 'Huang Yueying', class: 'Inventor', icon: 'HY', atk: 7, def: 5, spd: 8, meshPrefix: 'Model008', glb: './characters/Model008.glb', color: '#44bb88' },
-      { id: 'Model009', name: 'Xu Kui', class: 'Shadow Blade', icon: 'XK', atk: 8, def: 5, spd: 9, meshPrefix: 'Model009', glb: './characters/Model009.glb', color: '#6644aa' },
-      { id: 'Model010', name: 'Liu Bei', class: 'Warlord', icon: 'LB', atk: 7, def: 7, spd: 7, meshPrefix: 'Model010', glb: './characters/Model010.glb', color: '#44aa44' },
-      { id: 'Model011', name: 'Lu Bu', class: 'God of War', icon: 'LU', atk: 10, def: 7, spd: 7, meshPrefix: 'Model011', glb: './characters/Model011.glb', color: '#cc2222' },
-      { id: 'Model012', name: 'Lu Meng', class: 'Blade Master', icon: 'LM', atk: 8, def: 6, spd: 7, meshPrefix: 'Model012', glb: './characters/Model012.glb', color: '#2266bb' },
+      { id: 'Model001', name: 'Cao Pi', class: 'Swordsman', icon: 'CP', atk: 7, def: 6, spd: 8, meshPrefix: 'Model001', glb: './characters/Model001_rigged.glb', color: '#cc3333' },
+      { id: 'Model002', name: 'Cao Zijian', class: 'Strategist', icon: 'CZ', atk: 5, def: 7, spd: 7, meshPrefix: 'Model002', glb: './characters/Model002_rigged.glb', color: '#8855cc' },
+      { id: 'Model003', name: 'Dian Wei', class: 'Berserker', icon: 'DW', atk: 10, def: 8, spd: 4, meshPrefix: 'Model003', glb: './characters/Model003_rigged.glb', color: '#dd6633' },
+      { id: 'Model004', name: 'Diao Chan', class: 'Enchantress', icon: 'DC', atk: 6, def: 5, spd: 9, meshPrefix: 'Model004', glb: './characters/Model004_rigged.glb', color: '#dd55aa' },
+      { id: 'Model005', name: 'Dong Zhuo', class: 'Tyrant', icon: 'DZ', atk: 9, def: 9, spd: 3, meshPrefix: 'Model005', glb: './characters/Model005_rigged.glb', color: '#884422' },
+      { id: 'Model006', name: 'Guo Jia', class: 'Tactician', icon: 'GJ', atk: 6, def: 6, spd: 8, meshPrefix: 'Model006', glb: './characters/Model006_rigged.glb', color: '#3388cc' },
+      { id: 'Model007', name: 'Huang Gai', class: 'Vanguard', icon: 'HG', atk: 8, def: 8, spd: 5, meshPrefix: 'Model007', glb: './characters/Model007_rigged.glb', color: '#cc8833' },
+      { id: 'Model008', name: 'Huang Yueying', class: 'Inventor', icon: 'HY', atk: 7, def: 5, spd: 8, meshPrefix: 'Model008', glb: './characters/Model008_rigged.glb', color: '#44bb88' },
+      { id: 'Model009', name: 'Xu Kui', class: 'Shadow Blade', icon: 'XK', atk: 8, def: 5, spd: 9, meshPrefix: 'Model009', glb: './characters/Model009_rigged.glb', color: '#6644aa' },
+      { id: 'Model010', name: 'Liu Bei', class: 'Warlord', icon: 'LB', atk: 7, def: 7, spd: 7, meshPrefix: 'Model010', glb: './characters/Model010_rigged.glb', color: '#44aa44' },
+      { id: 'Model011', name: 'Lu Bu', class: 'God of War', icon: 'LU', atk: 10, def: 7, spd: 7, meshPrefix: 'Model011', glb: './characters/Model011_rigged.glb', color: '#cc2222' },
+      { id: 'Model012', name: 'Lu Meng', class: 'Blade Master', icon: 'LM', atk: 8, def: 6, spd: 7, meshPrefix: 'Model012', glb: './characters/Model012_rigged.glb', color: '#2266bb' },
     ];
 
     // ===== WEAPON DATA =====
@@ -1580,195 +1580,6 @@
       return fighter.combat.stateTime >= def.activeStart && fighter.combat.stateTime <= def.activeEnd;
     }
 
-    // ===== PROCEDURAL ANIMATION FALLBACK =====
-    // Drives visible motion via group transforms when no Mixamo clips are loaded.
-    function hasRealClips(fighter) {
-      return fighter.animation
-        && Object.keys(fighter.animation.stateToClip).length > 0
-        && fighter.animation.currentAction;
-    }
-
-    function updateProceduralAnimation(fighter, dt) {
-      if (hasRealClips(fighter)) return; // real clips take over
-      if (!fighter?.combat) return;
-      const state = fighter.combat.state;
-      const t = fighter.combat.stateTime; // ms elapsed in current state
-      const g = fighter.group;
-      const by = fighter.baseY || 0;
-      const now = Date.now();
-
-      // Reset to neutral every frame — state block sets deltas
-      g.rotation.x = 0;
-      g.rotation.z = 0;
-      g.position.y = by;
-
-      // --- Generic attack animation (handles all attack_1 through attack_10) ---
-      if (isAttackState(state)) {
-        const def = getAttackDef(fighter, state);
-        if (def) {
-          const power = def.category === 'special' ? 2.0 : def.category === 'heavy' ? 1.4 : 1.0;
-
-          if (def.ranged) {
-            // --- Ranged attack animations ---
-            const isShockwave = def.projType === 'shockwave';
-            const isBeam = def.projType === 'beam';
-            if (t < def.activeStart) {
-              // Charge: lean back hard, coil energy
-              const w = t / def.activeStart;
-              g.rotation.x = w * 0.18 * power;
-              g.position.y = by - w * 0.04 * power;
-              g.rotation.z = Math.sin(w * Math.PI * 3) * 0.05 * power;
-              if (isShockwave) g.position.y = by + w * 0.06; // rise before stomp
-            } else if (t <= def.activeEnd) {
-              // Release
-              const a = (t - def.activeStart) / (def.activeEnd - def.activeStart);
-              if (isShockwave) {
-                // Stomp: slam down hard
-                g.rotation.x = 0.2 * power * (1 - a * 0.6);
-                g.position.y = by - 0.08 * power * (1 - a);
-              } else if (isBeam) {
-                // Beam: hold extended pose with tremor
-                g.rotation.x = -0.20 * power;
-                g.position.y = by + 0.04 * power;
-                g.rotation.z = Math.sin(t * 0.04) * 0.03;
-              } else {
-                // General ranged: snap forward hard
-                g.rotation.x = -0.22 * power * (1 - a * 0.4);
-                g.position.y = by + 0.05 * power;
-                g.rotation.z = Math.sin(t * 0.025) * 0.04;
-              }
-            } else {
-              // Recovery
-              const r = Math.min(1, (t - def.activeEnd) / (def.recoveryEnd - def.activeEnd));
-              const snap = isShockwave ? 0.2 : 0.22;
-              g.rotation.x = -snap * power * (1 - r);
-              g.position.y = by + (isShockwave ? -0.08 : 0.05) * power * (1 - r);
-              g.rotation.z = 0;
-            }
-          } else {
-            // --- Melee attack animations ---
-            const isKick = (state === 'attack_4' || state === 'attack_5' || state === 'attack_6');
-            if (t < def.activeStart) {
-              const w = t / def.activeStart;
-              g.rotation.x = w * 0.08 * power;
-              g.position.y = by - w * 0.02 * power;
-              if (def.category === 'special') g.rotation.z = Math.sin(w * Math.PI * 2) * 0.04;
-            } else if (t <= def.activeEnd) {
-              const a = (t - def.activeStart) / (def.activeEnd - def.activeStart);
-              g.rotation.x = -0.15 * power * (1 - a * 0.5);
-              g.position.y = by + 0.03 * power;
-              if (isKick) g.rotation.z = -0.08 * a;
-              if (def.category === 'special') g.rotation.z = Math.sin(t * 0.02) * 0.06;
-            } else {
-              const r = Math.min(1, (t - def.activeEnd) / (def.recoveryEnd - def.activeEnd));
-              g.rotation.x = -0.15 * power * (1 - r);
-              g.position.y = by + 0.03 * power * (1 - r);
-              if (isKick) g.rotation.z = -0.08 * (1 - r);
-            }
-          }
-        }
-        return;
-      }
-
-      switch (state) {
-        // --- IDLE: gentle breathing bob ---
-        case FIGHTER_STATES.IDLE: {
-          g.position.y = by + Math.sin(now * 0.003) * 0.015;
-          break;
-        }
-        // --- WALK FORWARD: rhythmic bob + tilt ---
-        case FIGHTER_STATES.WALK_FWD: {
-          g.position.y = by + Math.sin(now * 0.01) * 0.02;
-          g.rotation.z = Math.sin(now * 0.01) * 0.03;
-          g.rotation.x = -0.04; // slight forward lean
-          break;
-        }
-        // --- WALK BACKWARD: cautious lean ---
-        case FIGHTER_STATES.WALK_BACK: {
-          g.position.y = by + Math.sin(now * 0.008) * 0.015;
-          g.rotation.x = 0.06;
-          break;
-        }
-        // --- BLOCK: crouch + lean back ---
-        case FIGHTER_STATES.BLOCK: {
-          const ease = Math.min(1, t / 100);
-          g.position.y = by - 0.06 * ease;
-          g.rotation.x = 0.1 * ease;
-          break;
-        }
-        // --- PARRY: sharp deflect snap ---
-        case FIGHTER_STATES.PARRY: {
-          const p = Math.min(1, t / PARRY_RECOVER_MS);
-          if (p < 0.2) {
-            const s = p / 0.2;
-            g.rotation.x = -s * 0.15;
-            g.position.y = by + s * 0.05;
-          } else {
-            const s = (p - 0.2) / 0.8;
-            g.rotation.x = -0.15 * (1 - s);
-            g.position.y = by + 0.05 * (1 - s);
-          }
-          break;
-        }
-        // --- BLOCK STUN: stagger after parried ---
-        case FIGHTER_STATES.BLOCK_STUN: {
-          const p = Math.min(1, t / PARRY_STUN_MS);
-          g.rotation.x = 0.15 * (1 - p);
-          g.rotation.z = Math.sin(t * 0.03) * 0.04 * (1 - p);
-          g.position.y = by - 0.04 * (1 - p);
-          break;
-        }
-        // --- HIT REACT: snap back then recover ---
-        case FIGHTER_STATES.HIT_REACT: {
-          const dur = STATE_RECOVERY_MS.hit_react;
-          const p = Math.min(1, t / dur);
-          if (p < 0.3) {
-            const s = p / 0.3;
-            g.rotation.x = s * 0.2;
-            g.position.y = by + s * 0.04;
-            g.rotation.z = Math.sin(s * Math.PI * 4) * 0.05;
-          } else {
-            const s = (p - 0.3) / 0.7;
-            g.rotation.x = 0.2 * (1 - s);
-            g.position.y = by + 0.04 * (1 - s);
-            g.rotation.z = Math.sin(s * Math.PI) * 0.02 * (1 - s);
-          }
-          break;
-        }
-        // --- KNOCKDOWN: fall then get up ---
-        case FIGHTER_STATES.KNOCKDOWN: {
-          const dur = STATE_RECOVERY_MS.knockdown;
-          const p = Math.min(1, t / dur);
-          if (p < 0.4) {
-            const s = p / 0.4;
-            g.rotation.x = s * 1.2;
-            g.position.y = by + 0.1 * (1 - s);
-          } else if (p < 0.7) {
-            g.rotation.x = 1.2;
-            g.position.y = by - 0.1;
-          } else {
-            const s = (p - 0.7) / 0.3;
-            g.rotation.x = 1.2 * (1 - s);
-            g.position.y = by - 0.1 * (1 - s);
-          }
-          break;
-        }
-        // --- KO: fall and stay down ---
-        case FIGHTER_STATES.KO: {
-          const p = Math.min(1, t / 600);
-          g.rotation.x = p * 1.5;
-          g.position.y = by - p * 0.15;
-          break;
-        }
-        // --- VICTORY: celebratory bounce ---
-        case FIGHTER_STATES.VICTORY: {
-          const bounce = Math.abs(Math.sin(t * 0.005)) * 0.1;
-          g.position.y = by + bounce;
-          g.rotation.z = Math.sin(t * 0.003) * 0.05;
-          break;
-        }
-      }
-    }
 
     // Build a body collider Box3 for a fighter at their current position.
     // Uses actual measured character dimensions, not hardcoded.
@@ -2375,97 +2186,13 @@
       animatePreview();
     }
 
-    // ===== PREVIEW ANIMATION SEQUENCE =====
-    // Plays a short attack combo then settles into idle facing the camera.
-    // Timeline: punch → kick → special → idle
-    let previewAnimTime = 0;
     let previewLastFrame = 0;
-    const PREVIEW_SEQUENCE = [
-      // { state, duration (ms) }
-      { state: 'idle',      dur: 400 },
-      { state: 'attack_1',  dur: 300 },  // light jab
-      { state: 'attack_2',  dur: 300 },  // light follow-up
-      { state: 'attack_3',  dur: 350 },  // light finisher
-      { state: 'idle',      dur: 200 },
-      { state: 'attack_4',  dur: 400 },  // heavy opener
-      { state: 'attack_5',  dur: 400 },  // heavy follow-up
-      { state: 'idle',      dur: 200 },
-      { state: 'attack_9',  dur: 500 },  // special
-      { state: 'idle',      dur: -1 },   // -1 = hold forever
-    ];
-
-    function getPreviewState() {
-      let elapsed = 0;
-      for (const step of PREVIEW_SEQUENCE) {
-        if (step.dur < 0) return { state: step.state, t: previewAnimTime - elapsed };
-        if (previewAnimTime < elapsed + step.dur) {
-          return { state: step.state, t: previewAnimTime - elapsed };
-        }
-        elapsed += step.dur;
-      }
-      // Shouldn't reach here, but fallback to idle
-      return { state: 'idle', t: 0 };
-    }
-
-    function applyPreviewAnimation(group, state, t) {
-      if (!group) return;
-      // Reset transforms
-      group.rotation.x = 0;
-      group.rotation.z = 0;
-      const baseY = group.userData.baseY || 0;
-      group.position.y = baseY;
-
-      const now = Date.now();
-
-      // Handle attack states generically using DEFAULT_ATTACK_DEFS
-      if (isAttackState(state)) {
-        const def = DEFAULT_ATTACK_DEFS[state];
-        if (def) {
-          const dur = def.recoveryEnd;
-          const power = def.category === 'special' ? 2.0 : def.category === 'heavy' ? 1.4 : 1.0;
-          const isHeavy = def.category === 'heavy';
-          const p = Math.min(1, t / dur);
-          const windupT = def.activeStart / dur;
-          const activeT = def.activeEnd / dur;
-          if (p < windupT) {
-            const w = p / windupT;
-            group.rotation.x = w * 0.08 * power;
-            group.position.y = baseY - w * 0.02 * power;
-            if (def.category === 'special') group.rotation.z = Math.sin(w * Math.PI * 2) * 0.04;
-          } else if (p < activeT) {
-            const a = (p - windupT) / (activeT - windupT);
-            group.rotation.x = -0.15 * power * (1 - a * 0.5);
-            group.position.y = baseY + 0.03 * power;
-            if (isHeavy) group.rotation.z = -0.08 * a;
-            if (def.category === 'special') group.rotation.z = Math.sin(t * 0.02) * 0.06;
-          } else {
-            const r = (p - activeT) / (1 - activeT);
-            group.rotation.x = -0.15 * power * (1 - r);
-            group.position.y = baseY + 0.03 * power * (1 - r);
-            if (isHeavy) group.rotation.z = -0.08 * (1 - r);
-          }
-        }
-        return;
-      }
-
-      switch (state) {
-        case 'idle': {
-          group.position.y = baseY + Math.sin(now * 0.003) * 0.015;
-          break;
-        }
-      }
-    }
 
     function animatePreview(timestamp) {
       animFrame = requestAnimationFrame(animatePreview);
-      const dt = previewLastFrame ? Math.min(timestamp - previewLastFrame, 50) : 16;
       previewLastFrame = timestamp;
-      previewAnimTime += dt;
 
-      if (previewChar) {
-        const { state, t } = getPreviewState();
-        applyPreviewAnimation(previewChar, state, t);
-      }
+      // Real Mixamo/rigged animations will drive the preview once clips are loaded
 
       if (previewControls) previewControls.update();
       if (previewRenderer && previewScene && previewCamera) {
@@ -2539,8 +2266,6 @@
       previewScene.add(group);
       previewChar = group;
 
-      // Reset animation timeline for each new character
-      previewAnimTime = 0;
       previewLastFrame = 0;
 
       document.getElementById('preview-name').textContent = char.name;
@@ -3199,8 +2924,7 @@
 
       // Always update animations + VFX + shake (even when paused — KO / victory still animate)
       if (gameState) {
-        updateProceduralAnimation(gameState.p1, dt);
-        updateProceduralAnimation(gameState.p2, dt);
+        // Real Mixamo/rigged animation mixers — procedural fallback removed
         if (gameState.p1.animation?.mixer) gameState.p1.animation.mixer.update(dt / 1000);
         if (gameState.p2.animation?.mixer) gameState.p2.animation.mixer.update(dt / 1000);
         updateVFX(dt);
