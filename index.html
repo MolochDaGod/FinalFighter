@@ -669,6 +669,93 @@
       lHip: 'bone_48', lThigh: 'bone_49', lShin: 'bone_50', lFoot: 'bone_51',
     };
 
+    // ===== MIXAMO → UNIRIG BONE RETARGETING =====
+    // Maps Mixamo standard bone names to our UniRig bone_N names.
+    // When a Mixamo GLB is loaded, all animation track names are rewritten
+    // so they drive the correct bones on our characters.
+    const MIXAMO_TO_UNIRIG = {
+      // Core spine
+      'mixamorigHips': BONE.hips,
+      'mixamorigSpine': BONE.spine1,
+      'mixamorigSpine1': BONE.spine2,
+      'mixamorigSpine2': BONE.chest,
+      'mixamorigNeck': BONE.neck,
+      'mixamorigHead': BONE.head,
+      // Right arm
+      'mixamorigRightShoulder': BONE.rShoulder,
+      'mixamorigRightArm': BONE.rUpperArm,
+      'mixamorigRightForeArm': BONE.rForearm,
+      'mixamorigRightHand': BONE.rHand,
+      // Left arm
+      'mixamorigLeftShoulder': BONE.lShoulder,
+      'mixamorigLeftArm': BONE.lUpperArm,
+      'mixamorigLeftForeArm': BONE.lForearm,
+      'mixamorigLeftHand': BONE.lHand,
+      // Right leg
+      'mixamorigRightUpLeg': BONE.rThigh,
+      'mixamorigRightLeg': BONE.rShin,
+      'mixamorigRightFoot': BONE.rFoot,
+      // Left leg
+      'mixamorigLeftUpLeg': BONE.lThigh,
+      'mixamorigLeftLeg': BONE.lShin,
+      'mixamorigLeftFoot': BONE.lFoot,
+    };
+
+    // Retarget a Mixamo AnimationClip to work with UniRig bones.
+    // Rewrites track names (e.g. "mixamorigHips.quaternion" → "bone_0.quaternion")
+    // and drops tracks for bones we don't have (fingers, toes, etc.)
+    //
+    // Handles multiple Mixamo export formats:
+    //   "mixamorigHips.quaternion"         — standard Mixamo GLB
+    //   "mixamorig:Hips.quaternion"        — colon-prefix variant
+    //   "Armature.mixamorigHips.quaternion" — Blender-exported path
+    function retargetMixamoClip(clip) {
+      const retargetedTracks = [];
+      let unmapped = 0;
+      for (const track of clip.tracks) {
+        // Property is always after the LAST dot (e.g. .quaternion, .position)
+        const lastDot = track.name.lastIndexOf('.');
+        if (lastDot < 0) continue;
+        const property = track.name.substring(lastDot); // ".quaternion" etc.
+        const path = track.name.substring(0, lastDot);  // everything before property
+
+        // The bone name is the last segment of the path (after any '/' or '.' hierarchy)
+        const segments = path.split(/[\/.]/);
+        const boneName = segments[segments.length - 1];
+
+        // Try direct lookup first
+        let mappedBone = MIXAMO_TO_UNIRIG[boneName];
+
+        // Try colon-prefix → standard conversion: "mixamorig:Hips" → "mixamorigHips"
+        if (!mappedBone && boneName.startsWith('mixamorig:')) {
+          const converted = 'mixamorig' + boneName.substring('mixamorig:'.length);
+          mappedBone = MIXAMO_TO_UNIRIG[converted];
+        }
+
+        // If already a bone_N name (pre-retargeted clip), pass through
+        if (!mappedBone && /^bone_\d+$/.test(boneName)) {
+          retargetedTracks.push(track.clone());
+          continue;
+        }
+
+        if (mappedBone) {
+          const newTrack = track.clone();
+          newTrack.name = mappedBone + property;
+          retargetedTracks.push(newTrack);
+        } else {
+          unmapped++;
+        }
+      }
+
+      if (retargetedTracks.length === 0) {
+        console.warn(`[retarget] ${clip.name}: no tracks mapped (${unmapped} unmapped, ${clip.tracks.length} total).`,
+          'Sample track:', clip.tracks[0]?.name);
+        return null;
+      }
+      console.log(`[retarget] ${clip.name}: ${retargetedTracks.length} mapped, ${unmapped} dropped`);
+      return new THREE.AnimationClip(clip.name, clip.duration, retargetedTracks);
+    }
+
     // Euler helper → quaternion array for keyframe tracks
     function _eq(x, y, z) {
       const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z));
@@ -687,41 +774,67 @@
       const clips = {};
       const PI = Math.PI, H = PI / 2, Q = PI / 4, E = PI / 8;
 
-      // --- IDLE: gentle breathing sway ---
+      // --- Fighting stance base pose (arms down, guard up) ---
+      // These values bring arms from T-pose into a natural fighting guard
+      const RA_IDLE = _eq(0.2, 0, -1.2);   // right upper arm: down + slightly forward
+      const LA_IDLE = _eq(0.2, 0, 1.2);    // left upper arm: mirror
+      const RF_IDLE = _eq(-1.1, 0, 0);     // right forearm: bent up in guard
+      const LF_IDLE = _eq(-1.1, 0, 0);     // left forearm: bent up in guard
+      const RA_IDLE2 = _eq(0.18, 0, -1.15); // breathing variation
+      const LA_IDLE2 = _eq(0.18, 0, 1.15);
+      const RF_IDLE2 = _eq(-1.05, 0, 0);
+      const LF_IDLE2 = _eq(-1.05, 0, 0);
+
+      // --- IDLE: fighting stance with breathing sway ---
       clips.idle = new THREE.AnimationClip('idle', 2.0, [
-        _boneTrack(BONE.spine1, [0, 1, 2], [_eq(0.02,0,0), _eq(-0.02,0,0), _eq(0.02,0,0)]),
-        _boneTrack(BONE.chest,  [0, 1, 2], [_eq(0.01,0,0), _eq(-0.01,0,0), _eq(0.01,0,0)]),
-        _boneTrack(BONE.rUpperArm, [0, 1, 2], [_eq(0,0,-0.15), _eq(0,0,-0.12), _eq(0,0,-0.15)]),
-        _boneTrack(BONE.lUpperArm, [0, 1, 2], [_eq(0,0,0.15), _eq(0,0,0.12), _eq(0,0,0.15)]),
-        _boneTrack(BONE.rForearm, [0, 1, 2], [_eq(-0.3,0,0), _eq(-0.25,0,0), _eq(-0.3,0,0)]),
-        _boneTrack(BONE.lForearm, [0, 1, 2], [_eq(-0.3,0,0), _eq(-0.25,0,0), _eq(-0.3,0,0)]),
+        _boneTrack(BONE.spine1, [0, 1, 2], [_eq(0.06,0,0), _eq(0.02,0,0), _eq(0.06,0,0)]),
+        _boneTrack(BONE.chest,  [0, 1, 2], [_eq(0.08,0,0), _eq(0.04,0,0), _eq(0.08,0,0)]),
+        _boneTrack(BONE.rUpperArm, [0, 1, 2], [RA_IDLE, RA_IDLE2, RA_IDLE]),
+        _boneTrack(BONE.lUpperArm, [0, 1, 2], [LA_IDLE, LA_IDLE2, LA_IDLE]),
+        _boneTrack(BONE.rForearm, [0, 1, 2], [RF_IDLE, RF_IDLE2, RF_IDLE]),
+        _boneTrack(BONE.lForearm, [0, 1, 2], [LF_IDLE, LF_IDLE2, LF_IDLE]),
+        _boneTrack(BONE.rThigh, [0, 1, 2], [_eq(-0.08,0,-0.05), _eq(-0.05,0,-0.05), _eq(-0.08,0,-0.05)]),
+        _boneTrack(BONE.lThigh, [0, 1, 2], [_eq(-0.08,0,0.05), _eq(-0.05,0,0.05), _eq(-0.08,0,0.05)]),
+        _boneTrack(BONE.rShin,  [0, 1, 2], [_eq(0.15,0,0), _eq(0.12,0,0), _eq(0.15,0,0)]),
+        _boneTrack(BONE.lShin,  [0, 1, 2], [_eq(0.15,0,0), _eq(0.12,0,0), _eq(0.15,0,0)]),
       ]);
 
-      // --- WALK FORWARD: alternating legs + arm swing ---
+      // --- WALK FORWARD: guard up + alternating legs ---
       clips.walk_fwd = new THREE.AnimationClip('walk_fwd', 0.8, [
-        _boneTrack(BONE.rThigh, [0, 0.2, 0.4, 0.6, 0.8], [_eq(-0.4,0,0), _eq(0,0,0), _eq(0.3,0,0), _eq(0,0,0), _eq(-0.4,0,0)]),
-        _boneTrack(BONE.lThigh, [0, 0.2, 0.4, 0.6, 0.8], [_eq(0.3,0,0), _eq(0,0,0), _eq(-0.4,0,0), _eq(0,0,0), _eq(0.3,0,0)]),
-        _boneTrack(BONE.rShin,  [0, 0.2, 0.4, 0.6, 0.8], [_eq(0.5,0,0), _eq(0.1,0,0), _eq(0.05,0,0), _eq(0.1,0,0), _eq(0.5,0,0)]),
-        _boneTrack(BONE.lShin,  [0, 0.2, 0.4, 0.6, 0.8], [_eq(0.05,0,0), _eq(0.1,0,0), _eq(0.5,0,0), _eq(0.1,0,0), _eq(0.05,0,0)]),
-        _boneTrack(BONE.rUpperArm, [0, 0.4, 0.8], [_eq(0.3,0,-0.1), _eq(-0.2,0,-0.1), _eq(0.3,0,-0.1)]),
-        _boneTrack(BONE.lUpperArm, [0, 0.4, 0.8], [_eq(-0.2,0,0.1), _eq(0.3,0,0.1), _eq(-0.2,0,0.1)]),
+        _boneTrack(BONE.rThigh, [0, 0.2, 0.4, 0.6, 0.8], [_eq(-0.4,0,-0.05), _eq(0,0,-0.05), _eq(0.3,0,-0.05), _eq(0,0,-0.05), _eq(-0.4,0,-0.05)]),
+        _boneTrack(BONE.lThigh, [0, 0.2, 0.4, 0.6, 0.8], [_eq(0.3,0,0.05), _eq(0,0,0.05), _eq(-0.4,0,0.05), _eq(0,0,0.05), _eq(0.3,0,0.05)]),
+        _boneTrack(BONE.rShin,  [0, 0.2, 0.4, 0.6, 0.8], [_eq(0.5,0,0), _eq(0.15,0,0), _eq(0.05,0,0), _eq(0.15,0,0), _eq(0.5,0,0)]),
+        _boneTrack(BONE.lShin,  [0, 0.2, 0.4, 0.6, 0.8], [_eq(0.05,0,0), _eq(0.15,0,0), _eq(0.5,0,0), _eq(0.15,0,0), _eq(0.05,0,0)]),
+        _boneTrack(BONE.rUpperArm, [0, 0.4, 0.8], [_eq(0.4,0,-1.1), _eq(0.0,0,-1.3), _eq(0.4,0,-1.1)]),
+        _boneTrack(BONE.lUpperArm, [0, 0.4, 0.8], [_eq(0.0,0,1.3), _eq(0.4,0,1.1), _eq(0.0,0,1.3)]),
+        _boneTrack(BONE.rForearm, [0, 0.4, 0.8], [_eq(-0.9,0,0), _eq(-1.1,0,0), _eq(-0.9,0,0)]),
+        _boneTrack(BONE.lForearm, [0, 0.4, 0.8], [_eq(-1.1,0,0), _eq(-0.9,0,0), _eq(-1.1,0,0)]),
+        _boneTrack(BONE.chest, [0, 0.4, 0.8], [_eq(0.1,0,0), _eq(0.06,0,0), _eq(0.1,0,0)]),
         _boneTrack(BONE.hips, [0, 0.2, 0.4, 0.6, 0.8], [_eq(0,0.03,0), _eq(0,0,0), _eq(0,-0.03,0), _eq(0,0,0), _eq(0,0.03,0)]),
       ]);
 
-      // --- WALK BACK ---
+      // --- WALK BACK: guard up, stepping back ---
       clips.walk_back = new THREE.AnimationClip('walk_back', 0.9, [
-        _boneTrack(BONE.rThigh, [0, 0.45, 0.9], [_eq(0.25,0,0), _eq(-0.3,0,0), _eq(0.25,0,0)]),
-        _boneTrack(BONE.lThigh, [0, 0.45, 0.9], [_eq(-0.3,0,0), _eq(0.25,0,0), _eq(-0.3,0,0)]),
-        _boneTrack(BONE.chest, [0, 0.45, 0.9], [_eq(-0.05,0,0), _eq(-0.03,0,0), _eq(-0.05,0,0)]),
+        _boneTrack(BONE.rThigh, [0, 0.45, 0.9], [_eq(0.25,0,-0.05), _eq(-0.3,0,-0.05), _eq(0.25,0,-0.05)]),
+        _boneTrack(BONE.lThigh, [0, 0.45, 0.9], [_eq(-0.3,0,0.05), _eq(0.25,0,0.05), _eq(-0.3,0,0.05)]),
+        _boneTrack(BONE.rShin,  [0, 0.45, 0.9], [_eq(0.1,0,0), _eq(0.4,0,0), _eq(0.1,0,0)]),
+        _boneTrack(BONE.lShin,  [0, 0.45, 0.9], [_eq(0.4,0,0), _eq(0.1,0,0), _eq(0.4,0,0)]),
+        _boneTrack(BONE.rUpperArm, [0, 0.9], [RA_IDLE, RA_IDLE]),
+        _boneTrack(BONE.lUpperArm, [0, 0.9], [LA_IDLE, LA_IDLE]),
+        _boneTrack(BONE.rForearm, [0, 0.9], [RF_IDLE, RF_IDLE]),
+        _boneTrack(BONE.lForearm, [0, 0.9], [LF_IDLE, LF_IDLE]),
+        _boneTrack(BONE.chest, [0, 0.45, 0.9], [_eq(0.05,0,0), _eq(0.02,0,0), _eq(0.05,0,0)]),
       ]);
 
-      // --- BLOCK: arms raised guard ---
+      // --- BLOCK: high guard, arms crossed in front ---
       clips.block = new THREE.AnimationClip('block', 0.6, [
-        _boneTrack(BONE.rUpperArm, [0, 0.15, 0.6], [_ID, _eq(-H*0.9,0,-0.3), _eq(-H*0.9,0,-0.3)]),
-        _boneTrack(BONE.rForearm,  [0, 0.15, 0.6], [_ID, _eq(-H*0.8,0,0), _eq(-H*0.8,0,0)]),
-        _boneTrack(BONE.lUpperArm, [0, 0.15, 0.6], [_ID, _eq(-H*0.9,0,0.3), _eq(-H*0.9,0,0.3)]),
-        _boneTrack(BONE.lForearm,  [0, 0.15, 0.6], [_ID, _eq(-H*0.8,0,0), _eq(-H*0.8,0,0)]),
-        _boneTrack(BONE.chest, [0, 0.15, 0.6], [_ID, _eq(-0.1,0,0), _eq(-0.1,0,0)]),
+        _boneTrack(BONE.rUpperArm, [0, 0.15, 0.6], [RA_IDLE, _eq(-0.3,0.3,-0.8), _eq(-0.3,0.3,-0.8)]),
+        _boneTrack(BONE.rForearm,  [0, 0.15, 0.6], [RF_IDLE, _eq(-1.4,0,0), _eq(-1.4,0,0)]),
+        _boneTrack(BONE.lUpperArm, [0, 0.15, 0.6], [LA_IDLE, _eq(-0.3,-0.3,0.8), _eq(-0.3,-0.3,0.8)]),
+        _boneTrack(BONE.lForearm,  [0, 0.15, 0.6], [LF_IDLE, _eq(-1.4,0,0), _eq(-1.4,0,0)]),
+        _boneTrack(BONE.chest, [0, 0.15, 0.6], [_eq(0.08,0,0), _eq(-0.05,0,0), _eq(-0.05,0,0)]),
+        _boneTrack(BONE.rShin, [0, 0.15, 0.6], [_eq(0.15,0,0), _eq(0.25,0,0), _eq(0.25,0,0)]),
+        _boneTrack(BONE.lShin, [0, 0.15, 0.6], [_eq(0.15,0,0), _eq(0.25,0,0), _eq(0.25,0,0)]),
       ]);
 
       // --- DODGE: sidestep lean ---
@@ -790,41 +903,53 @@
       ]);
 
       // --- ATTACKS 1-10: varied combat strikes ---
-      // Light chain: 1→2→3
+      // Light chain: 1→2→3 (all start from fighting stance)
       clips.attack_1 = new THREE.AnimationClip('attack_1', 0.35, [
-        _boneTrack(BONE.rUpperArm, [0, 0.1, 0.25, 0.35], [_eq(0,0,-0.2), _eq(-0.8,0.3,-0.5), _eq(-0.3,0,-0.2), _eq(0,0,-0.15)]),
-        _boneTrack(BONE.rForearm,  [0, 0.1, 0.25, 0.35], [_eq(-0.3,0,0), _eq(-0.9,0,0), _eq(-0.4,0,0), _eq(-0.3,0,0)]),
-        _boneTrack(BONE.chest, [0, 0.08, 0.2, 0.35], [_ID, _eq(0,0.2,0), _eq(0,0.05,0), _ID]),
+        _boneTrack(BONE.rUpperArm, [0, 0.1, 0.25, 0.35], [RA_IDLE, _eq(-0.4,0.5,-0.8), _eq(0.1,0.2,-1.0), RA_IDLE]),
+        _boneTrack(BONE.rForearm,  [0, 0.1, 0.25, 0.35], [RF_IDLE, _eq(-1.4,0,0), _eq(-0.8,0,0), RF_IDLE]),
+        _boneTrack(BONE.lUpperArm, [0, 0.35], [LA_IDLE, LA_IDLE]),
+        _boneTrack(BONE.lForearm,  [0, 0.35], [LF_IDLE, LF_IDLE]),
+        _boneTrack(BONE.chest, [0, 0.08, 0.2, 0.35], [_eq(0.08,0,0), _eq(0.1,0.25,0), _eq(0.08,0.05,0), _eq(0.08,0,0)]),
       ]);
       clips.attack_2 = new THREE.AnimationClip('attack_2', 0.32, [
-        _boneTrack(BONE.lUpperArm, [0, 0.08, 0.22, 0.32], [_eq(0,0,0.2), _eq(-0.7,-0.3,0.5), _eq(-0.3,0,0.2), _eq(0,0,0.15)]),
-        _boneTrack(BONE.lForearm,  [0, 0.08, 0.22, 0.32], [_eq(-0.3,0,0), _eq(-0.8,0,0), _eq(-0.4,0,0), _eq(-0.3,0,0)]),
-        _boneTrack(BONE.chest, [0, 0.06, 0.18, 0.32], [_ID, _eq(0,-0.2,0), _eq(0,-0.05,0), _ID]),
+        _boneTrack(BONE.lUpperArm, [0, 0.08, 0.22, 0.32], [LA_IDLE, _eq(-0.4,-0.5,0.8), _eq(0.1,-0.2,1.0), LA_IDLE]),
+        _boneTrack(BONE.lForearm,  [0, 0.08, 0.22, 0.32], [LF_IDLE, _eq(-1.4,0,0), _eq(-0.8,0,0), LF_IDLE]),
+        _boneTrack(BONE.rUpperArm, [0, 0.32], [RA_IDLE, RA_IDLE]),
+        _boneTrack(BONE.rForearm,  [0, 0.32], [RF_IDLE, RF_IDLE]),
+        _boneTrack(BONE.chest, [0, 0.06, 0.18, 0.32], [_eq(0.08,0,0), _eq(0.1,-0.25,0), _eq(0.08,-0.05,0), _eq(0.08,0,0)]),
       ]);
       clips.attack_3 = new THREE.AnimationClip('attack_3', 0.4, [
-        _boneTrack(BONE.rUpperArm, [0, 0.12, 0.28, 0.4], [_eq(-0.3,0,-0.2), _eq(-H,0.5,-0.6), _eq(-0.5,0.1,-0.3), _eq(0,0,-0.15)]),
-        _boneTrack(BONE.rForearm,  [0, 0.12, 0.28, 0.4], [_eq(-0.4,0,0), _eq(-1.0,0,0), _eq(-0.5,0,0), _eq(-0.3,0,0)]),
-        _boneTrack(BONE.chest, [0, 0.1, 0.25, 0.4], [_ID, _eq(0.08,0.25,0), _eq(0,0.1,0), _ID]),
-        _boneTrack(BONE.hips, [0, 0.1, 0.4], [_ID, _eq(0,0.1,0), _ID]),
+        _boneTrack(BONE.rUpperArm, [0, 0.12, 0.28, 0.4], [RA_IDLE, _eq(-0.6,0.6,-0.6), _eq(-0.2,0.2,-0.9), RA_IDLE]),
+        _boneTrack(BONE.rForearm,  [0, 0.12, 0.28, 0.4], [RF_IDLE, _eq(-1.5,0,0), _eq(-0.8,0,0), RF_IDLE]),
+        _boneTrack(BONE.lUpperArm, [0, 0.4], [LA_IDLE, LA_IDLE]),
+        _boneTrack(BONE.lForearm,  [0, 0.4], [LF_IDLE, LF_IDLE]),
+        _boneTrack(BONE.chest, [0, 0.1, 0.25, 0.4], [_eq(0.08,0,0), _eq(0.12,0.3,0), _eq(0.08,0.1,0), _eq(0.08,0,0)]),
+        _boneTrack(BONE.hips, [0, 0.1, 0.4], [_ID, _eq(0,0.12,0), _ID]),
       ]);
-      // Heavy chain: 4→5→6
+      // Heavy chain: 4→5→6 (start from fighting stance, bigger wind-ups)
       clips.attack_4 = new THREE.AnimationClip('attack_4', 0.45, [
-        _boneTrack(BONE.rUpperArm, [0, 0.15, 0.3, 0.45], [_eq(0,0,-0.2), _eq(-H*1.1,0,-0.4), _eq(-0.4,0.2,-0.3), _eq(0,0,-0.15)]),
-        _boneTrack(BONE.rForearm,  [0, 0.15, 0.3, 0.45], [_eq(-0.2,0,0), _eq(-0.4,0,0), _eq(-0.8,0,0), _eq(-0.3,0,0)]),
-        _boneTrack(BONE.chest, [0, 0.12, 0.3, 0.45], [_ID, _eq(-0.15,0,0), _eq(0.12,0.15,0), _ID]),
-        _boneTrack(BONE.rThigh,[0, 0.15, 0.45], [_ID, _eq(-0.15,0,0), _ID]),
+        _boneTrack(BONE.rUpperArm, [0, 0.15, 0.3, 0.45], [RA_IDLE, _eq(-1.2,0.2,-0.5), _eq(-0.2,0.4,-0.9), RA_IDLE]),
+        _boneTrack(BONE.rForearm,  [0, 0.15, 0.3, 0.45], [RF_IDLE, _eq(-0.4,0,0), _eq(-1.3,0,0), RF_IDLE]),
+        _boneTrack(BONE.lUpperArm, [0, 0.45], [LA_IDLE, LA_IDLE]),
+        _boneTrack(BONE.lForearm,  [0, 0.45], [LF_IDLE, LF_IDLE]),
+        _boneTrack(BONE.chest, [0, 0.12, 0.3, 0.45], [_eq(0.08,0,0), _eq(-0.1,0,0), _eq(0.15,0.2,0), _eq(0.08,0,0)]),
+        _boneTrack(BONE.rThigh,[0, 0.15, 0.45], [_eq(-0.08,0,-0.05), _eq(-0.2,0,-0.05), _eq(-0.08,0,-0.05)]),
       ]);
       clips.attack_5 = new THREE.AnimationClip('attack_5', 0.5, [
-        _boneTrack(BONE.rUpperArm, [0, 0.18, 0.35, 0.5], [_eq(0,0,-0.3), _eq(-0.4,H*0.6,-0.6), _eq(-0.3,0,-0.2), _eq(0,0,-0.15)]),
-        _boneTrack(BONE.lUpperArm, [0, 0.18, 0.35, 0.5], [_eq(0,0,0.2), _eq(-0.6,-0.3,0.4), _eq(-0.2,0,0.15), _eq(0,0,0.15)]),
-        _boneTrack(BONE.chest, [0, 0.15, 0.35, 0.5], [_ID, _eq(0,0.3,0), _eq(0,-0.05,0), _ID]),
-        _boneTrack(BONE.hips,  [0, 0.15, 0.5], [_ID, _eq(0,0.15,0), _ID]),
+        _boneTrack(BONE.rUpperArm, [0, 0.18, 0.35, 0.5], [RA_IDLE, _eq(-0.3,H*0.6,-0.7), _eq(0.1,0.2,-1.1), RA_IDLE]),
+        _boneTrack(BONE.lUpperArm, [0, 0.18, 0.35, 0.5], [LA_IDLE, _eq(-0.4,-0.4,0.6), _eq(0.1,-0.1,1.1), LA_IDLE]),
+        _boneTrack(BONE.rForearm, [0, 0.18, 0.5], [RF_IDLE, _eq(-1.3,0,0), RF_IDLE]),
+        _boneTrack(BONE.lForearm, [0, 0.18, 0.5], [LF_IDLE, _eq(-0.8,0,0), LF_IDLE]),
+        _boneTrack(BONE.chest, [0, 0.15, 0.35, 0.5], [_eq(0.08,0,0), _eq(0.08,0.35,0), _eq(0.08,-0.05,0), _eq(0.08,0,0)]),
+        _boneTrack(BONE.hips,  [0, 0.15, 0.5], [_ID, _eq(0,0.18,0), _ID]),
       ]);
       clips.attack_6 = new THREE.AnimationClip('attack_6', 0.55, [
-        _boneTrack(BONE.chest, [0, 0.15, 0.35, 0.55], [_ID, _eq(0,-0.2,0), _eq(0.1,H*0.7,0), _eq(0,0.1,0)]),
-        _boneTrack(BONE.rUpperArm, [0, 0.15, 0.35, 0.55], [_eq(0,0,-0.3), _eq(-0.5,-0.3,-0.5), _eq(-0.8,0.6,-0.6), _eq(0,0,-0.15)]),
-        _boneTrack(BONE.lUpperArm, [0, 0.15, 0.35, 0.55], [_eq(0,0,0.3), _eq(-0.5,0.3,0.5), _eq(-0.8,-0.6,0.6), _eq(0,0,0.15)]),
-        _boneTrack(BONE.hips, [0, 0.15, 0.35, 0.55], [_ID, _eq(0,-0.2,0), _eq(0,0.5,0), _eq(0,0.05,0)]),
+        _boneTrack(BONE.chest, [0, 0.15, 0.35, 0.55], [_eq(0.08,0,0), _eq(0.08,-0.25,0), _eq(0.12,H*0.7,0), _eq(0.08,0.1,0)]),
+        _boneTrack(BONE.rUpperArm, [0, 0.15, 0.35, 0.55], [RA_IDLE, _eq(-0.3,-0.4,-0.7), _eq(-0.6,0.7,-0.6), RA_IDLE]),
+        _boneTrack(BONE.lUpperArm, [0, 0.15, 0.35, 0.55], [LA_IDLE, _eq(-0.3,0.4,0.7), _eq(-0.6,-0.7,0.6), LA_IDLE]),
+        _boneTrack(BONE.rForearm, [0, 0.15, 0.55], [RF_IDLE, _eq(-1.2,0,0), RF_IDLE]),
+        _boneTrack(BONE.lForearm, [0, 0.15, 0.55], [LF_IDLE, _eq(-1.2,0,0), LF_IDLE]),
+        _boneTrack(BONE.hips, [0, 0.15, 0.35, 0.55], [_ID, _eq(0,-0.25,0), _eq(0,0.55,0), _eq(0,0.05,0)]),
       ]);
       // Bridge moves: 7, 8
       clips.attack_7 = new THREE.AnimationClip('attack_7', 0.38, [
@@ -1468,13 +1593,130 @@
     // Layered resolution: shared → weapon type → per-character (most specific wins)
     const MIXAMO_CLIP_MANIFEST = {
       shared: {
-        // Populate with: idle: './anims/shared/idle.glb', etc.
+        idle:       './anims/shared/idle.glb',
+        walk_fwd:   './anims/shared/walk_fwd.glb',
+        walk_back:  './anims/shared/walk_back.glb',
+        run_fwd:    './anims/shared/run_fwd.glb',
+        run_back:   './anims/shared/run_back.glb',
+        jump:       './anims/shared/jump.glb',
+        hit_react:  './anims/shared/hit_react.glb',
+        knockdown:  './anims/shared/knockdown.glb',
+        ko:         './anims/shared/ko.glb',
       },
       weaponType: {
-        // sword: { punch: './anims/weapon_sword/slash_1.glb', ... },
+        sword: {
+          idle: './anims/weapon_sword/idle.glb', walk_fwd: './anims/weapon_sword/walk_fwd.glb', walk_back: './anims/weapon_sword/walk_back.glb',
+          run_fwd: './anims/weapon_sword/run_fwd.glb', run_back: './anims/weapon_sword/run_back.glb',
+          attack_1: './anims/weapon_sword/attack_1.glb', attack_2: './anims/weapon_sword/attack_2.glb', attack_3: './anims/weapon_sword/attack_3.glb',
+          attack_4: './anims/weapon_sword/attack_4.glb', attack_5: './anims/weapon_sword/attack_5.glb', attack_6: './anims/weapon_sword/attack_6.glb',
+          attack_7: './anims/weapon_sword/attack_7.glb', attack_8: './anims/weapon_sword/attack_8.glb',
+          attack_9: './anims/weapon_sword/attack_9.glb', attack_10: './anims/weapon_sword/attack_10.glb',
+          block: './anims/weapon_sword/block.glb', parry: './anims/weapon_sword/parry.glb',
+          dodge: './anims/weapon_sword/dodge.glb', crouch: './anims/weapon_sword/crouch.glb', jump: './anims/weapon_sword/jump.glb',
+          hit_react: './anims/weapon_sword/hit_react.glb', knockdown: './anims/weapon_sword/knockdown.glb', ko: './anims/weapon_sword/ko.glb',
+          taunt: './anims/weapon_sword/taunt.glb', victory: './anims/weapon_sword/victory.glb',
+        },
+        dual_sword: {
+          idle: './anims/weapon_dual_sword/idle.glb', walk_fwd: './anims/weapon_dual_sword/walk_fwd.glb', walk_back: './anims/weapon_dual_sword/walk_back.glb',
+          run_fwd: './anims/weapon_dual_sword/run_fwd.glb', run_back: './anims/weapon_dual_sword/run_back.glb',
+          attack_1: './anims/weapon_dual_sword/attack_1.glb', attack_2: './anims/weapon_dual_sword/attack_2.glb', attack_3: './anims/weapon_dual_sword/attack_3.glb',
+          attack_4: './anims/weapon_dual_sword/attack_4.glb', attack_5: './anims/weapon_dual_sword/attack_5.glb', attack_6: './anims/weapon_dual_sword/attack_6.glb',
+          attack_7: './anims/weapon_dual_sword/attack_7.glb', attack_8: './anims/weapon_dual_sword/attack_8.glb',
+          attack_9: './anims/weapon_dual_sword/attack_9.glb', attack_10: './anims/weapon_dual_sword/attack_10.glb',
+          block: './anims/weapon_dual_sword/block.glb', parry: './anims/weapon_dual_sword/parry.glb',
+          dodge: './anims/weapon_dual_sword/dodge.glb', crouch: './anims/weapon_dual_sword/crouch.glb', jump: './anims/weapon_dual_sword/jump.glb',
+          hit_react: './anims/weapon_dual_sword/hit_react.glb', knockdown: './anims/weapon_dual_sword/knockdown.glb', ko: './anims/weapon_dual_sword/ko.glb',
+          taunt: './anims/weapon_dual_sword/taunt.glb', victory: './anims/weapon_dual_sword/victory.glb',
+        },
+        dual_blade: {
+          idle: './anims/weapon_dual_blade/idle.glb', walk_fwd: './anims/weapon_dual_blade/walk_fwd.glb', walk_back: './anims/weapon_dual_blade/walk_back.glb',
+          run_fwd: './anims/weapon_dual_blade/run_fwd.glb', run_back: './anims/weapon_dual_blade/run_back.glb',
+          attack_1: './anims/weapon_dual_blade/attack_1.glb', attack_2: './anims/weapon_dual_blade/attack_2.glb', attack_3: './anims/weapon_dual_blade/attack_3.glb',
+          attack_4: './anims/weapon_dual_blade/attack_4.glb', attack_5: './anims/weapon_dual_blade/attack_5.glb', attack_6: './anims/weapon_dual_blade/attack_6.glb',
+          attack_7: './anims/weapon_dual_blade/attack_7.glb', attack_8: './anims/weapon_dual_blade/attack_8.glb',
+          attack_9: './anims/weapon_dual_blade/attack_9.glb', attack_10: './anims/weapon_dual_blade/attack_10.glb',
+          block: './anims/weapon_dual_blade/block.glb', parry: './anims/weapon_dual_blade/parry.glb',
+          dodge: './anims/weapon_dual_blade/dodge.glb', crouch: './anims/weapon_dual_blade/crouch.glb', jump: './anims/weapon_dual_blade/jump.glb',
+          hit_react: './anims/weapon_dual_blade/hit_react.glb', knockdown: './anims/weapon_dual_blade/knockdown.glb', ko: './anims/weapon_dual_blade/ko.glb',
+          taunt: './anims/weapon_dual_blade/taunt.glb', victory: './anims/weapon_dual_blade/victory.glb',
+        },
+        axe: {
+          idle: './anims/weapon_axe/idle.glb', walk_fwd: './anims/weapon_axe/walk_fwd.glb', walk_back: './anims/weapon_axe/walk_back.glb',
+          run_fwd: './anims/weapon_axe/run_fwd.glb', run_back: './anims/weapon_axe/run_back.glb',
+          attack_1: './anims/weapon_axe/attack_1.glb', attack_2: './anims/weapon_axe/attack_2.glb', attack_3: './anims/weapon_axe/attack_3.glb',
+          attack_4: './anims/weapon_axe/attack_4.glb', attack_5: './anims/weapon_axe/attack_5.glb', attack_6: './anims/weapon_axe/attack_6.glb',
+          attack_7: './anims/weapon_axe/attack_7.glb', attack_8: './anims/weapon_axe/attack_8.glb',
+          attack_9: './anims/weapon_axe/attack_9.glb', attack_10: './anims/weapon_axe/attack_10.glb',
+          block: './anims/weapon_axe/block.glb', parry: './anims/weapon_axe/parry.glb',
+          dodge: './anims/weapon_axe/dodge.glb', crouch: './anims/weapon_axe/crouch.glb', jump: './anims/weapon_axe/jump.glb',
+          hit_react: './anims/weapon_axe/hit_react.glb', knockdown: './anims/weapon_axe/knockdown.glb', ko: './anims/weapon_axe/ko.glb',
+          taunt: './anims/weapon_axe/taunt.glb', victory: './anims/weapon_axe/victory.glb',
+        },
+        fan: {
+          idle: './anims/weapon_fan/idle.glb', walk_fwd: './anims/weapon_fan/walk_fwd.glb', walk_back: './anims/weapon_fan/walk_back.glb',
+          run_fwd: './anims/weapon_fan/run_fwd.glb', run_back: './anims/weapon_fan/run_back.glb',
+          attack_1: './anims/weapon_fan/attack_1.glb', attack_2: './anims/weapon_fan/attack_2.glb', attack_3: './anims/weapon_fan/attack_3.glb',
+          attack_4: './anims/weapon_fan/attack_4.glb', attack_5: './anims/weapon_fan/attack_5.glb', attack_6: './anims/weapon_fan/attack_6.glb',
+          attack_7: './anims/weapon_fan/attack_7.glb', attack_8: './anims/weapon_fan/attack_8.glb',
+          attack_9: './anims/weapon_fan/attack_9.glb', attack_10: './anims/weapon_fan/attack_10.glb',
+          block: './anims/weapon_fan/block.glb', parry: './anims/weapon_fan/parry.glb',
+          dodge: './anims/weapon_fan/dodge.glb', crouch: './anims/weapon_fan/crouch.glb', jump: './anims/weapon_fan/jump.glb',
+          hit_react: './anims/weapon_fan/hit_react.glb', knockdown: './anims/weapon_fan/knockdown.glb', ko: './anims/weapon_fan/ko.glb',
+          taunt: './anims/weapon_fan/taunt.glb', victory: './anims/weapon_fan/victory.glb',
+        },
+        mace: {
+          idle: './anims/weapon_mace/idle.glb', walk_fwd: './anims/weapon_mace/walk_fwd.glb', walk_back: './anims/weapon_mace/walk_back.glb',
+          run_fwd: './anims/weapon_mace/run_fwd.glb', run_back: './anims/weapon_mace/run_back.glb',
+          attack_1: './anims/weapon_mace/attack_1.glb', attack_2: './anims/weapon_mace/attack_2.glb', attack_3: './anims/weapon_mace/attack_3.glb',
+          attack_4: './anims/weapon_mace/attack_4.glb', attack_5: './anims/weapon_mace/attack_5.glb', attack_6: './anims/weapon_mace/attack_6.glb',
+          attack_7: './anims/weapon_mace/attack_7.glb', attack_8: './anims/weapon_mace/attack_8.glb',
+          attack_9: './anims/weapon_mace/attack_9.glb', attack_10: './anims/weapon_mace/attack_10.glb',
+          block: './anims/weapon_mace/block.glb', parry: './anims/weapon_mace/parry.glb',
+          dodge: './anims/weapon_mace/dodge.glb', crouch: './anims/weapon_mace/crouch.glb', jump: './anims/weapon_mace/jump.glb',
+          hit_react: './anims/weapon_mace/hit_react.glb', knockdown: './anims/weapon_mace/knockdown.glb', ko: './anims/weapon_mace/ko.glb',
+          taunt: './anims/weapon_mace/taunt.glb', victory: './anims/weapon_mace/victory.glb',
+        },
+        spear: {
+          idle: './anims/weapon_spear/idle.glb', walk_fwd: './anims/weapon_spear/walk_fwd.glb', walk_back: './anims/weapon_spear/walk_back.glb',
+          run_fwd: './anims/weapon_spear/run_fwd.glb', run_back: './anims/weapon_spear/run_back.glb',
+          attack_1: './anims/weapon_spear/attack_1.glb', attack_2: './anims/weapon_spear/attack_2.glb', attack_3: './anims/weapon_spear/attack_3.glb',
+          attack_4: './anims/weapon_spear/attack_4.glb', attack_5: './anims/weapon_spear/attack_5.glb', attack_6: './anims/weapon_spear/attack_6.glb',
+          attack_7: './anims/weapon_spear/attack_7.glb', attack_8: './anims/weapon_spear/attack_8.glb',
+          attack_9: './anims/weapon_spear/attack_9.glb', attack_10: './anims/weapon_spear/attack_10.glb',
+          block: './anims/weapon_spear/block.glb', parry: './anims/weapon_spear/parry.glb',
+          dodge: './anims/weapon_spear/dodge.glb', crouch: './anims/weapon_spear/crouch.glb', jump: './anims/weapon_spear/jump.glb',
+          hit_react: './anims/weapon_spear/hit_react.glb', knockdown: './anims/weapon_spear/knockdown.glb', ko: './anims/weapon_spear/ko.glb',
+          taunt: './anims/weapon_spear/taunt.glb', victory: './anims/weapon_spear/victory.glb',
+        },
+        crossbow: {
+          idle: './anims/weapon_crossbow/idle.glb', walk_fwd: './anims/weapon_crossbow/walk_fwd.glb', walk_back: './anims/weapon_crossbow/walk_back.glb',
+          run_fwd: './anims/weapon_crossbow/run_fwd.glb', run_back: './anims/weapon_crossbow/run_back.glb',
+          dodge: './anims/weapon_crossbow/dodge.glb',
+        },
+        staff: {
+          idle: './anims/weapon_staff/idle.glb', walk_fwd: './anims/weapon_staff/walk_fwd.glb', walk_back: './anims/weapon_staff/walk_back.glb',
+          run_fwd: './anims/weapon_staff/run_fwd.glb', run_back: './anims/weapon_staff/run_back.glb',
+          attack_1: './anims/weapon_staff/attack_1.glb', attack_4: './anims/weapon_staff/attack_4.glb',
+          attack_9: './anims/weapon_staff/attack_9.glb', attack_10: './anims/weapon_staff/attack_10.glb',
+          jump: './anims/weapon_staff/jump.glb',
+          hit_react: './anims/weapon_staff/hit_react.glb', knockdown: './anims/weapon_staff/knockdown.glb', ko: './anims/weapon_staff/ko.glb',
+        },
+        unarmed: {
+          idle: './anims/weapon_unarmed/idle.glb', walk_fwd: './anims/weapon_unarmed/walk_fwd.glb', walk_back: './anims/weapon_unarmed/walk_back.glb',
+          run_fwd: './anims/weapon_unarmed/run_fwd.glb', run_back: './anims/weapon_unarmed/run_back.glb',
+          attack_1: './anims/weapon_unarmed/attack_1.glb', attack_2: './anims/weapon_unarmed/attack_2.glb', attack_3: './anims/weapon_unarmed/attack_3.glb',
+          attack_4: './anims/weapon_unarmed/attack_4.glb', attack_5: './anims/weapon_unarmed/attack_5.glb', attack_6: './anims/weapon_unarmed/attack_6.glb',
+          attack_7: './anims/weapon_unarmed/attack_7.glb', attack_8: './anims/weapon_unarmed/attack_8.glb',
+          attack_9: './anims/weapon_unarmed/attack_9.glb', attack_10: './anims/weapon_unarmed/attack_10.glb',
+          block: './anims/weapon_unarmed/block.glb', parry: './anims/weapon_unarmed/parry.glb',
+          dodge: './anims/weapon_unarmed/dodge.glb', crouch: './anims/weapon_unarmed/crouch.glb', jump: './anims/weapon_unarmed/jump.glb',
+          hit_react: './anims/weapon_unarmed/hit_react.glb', knockdown: './anims/weapon_unarmed/knockdown.glb', ko: './anims/weapon_unarmed/ko.glb',
+          taunt: './anims/weapon_unarmed/taunt.glb', victory: './anims/weapon_unarmed/victory.glb',
+        },
       },
       perCharacter: {
-        // Model001: { special: './anims/CaoPi/special.glb' },
+        // Per-character overrides go here as you rig individual models.
+        // Example: Model001: { intro: './anims/CaoPi/intro.glb' },
       },
     };
 
@@ -1640,7 +1882,11 @@
         mixamoClipLoader.load(url, (clipGltf) => {
           if (!clipGltf.animations || clipGltf.animations.length === 0) return;
           const baseClip = clipGltf.animations[0];
-          const clip = baseClip.clone();
+
+          // Retarget Mixamo bone names → UniRig bone_N names.
+          // If the clip already uses bone_N names (pre-retargeted), this is a no-op.
+          let clip = retargetMixamoClip(baseClip);
+          if (!clip) clip = baseClip.clone(); // fallback if no Mixamo bones found
           clip.name = normalizeClipName(state);
           registerFighterClip(fighter, clip);
           remapAnimationStates(fighter);
@@ -1732,6 +1978,16 @@
         return;
       }
 
+      // --- Dodge recovery (jady-deth sidestep pattern) ---
+      if (state === FIGHTER_STATES.DODGE) {
+        fighter.sidestepping = true;
+        if (fighter.combat.stateTime >= STATE_RECOVERY_MS.dodge) {
+          fighter.sidestepping = false;
+          setFighterState(fighter, FIGHTER_STATES.IDLE);
+        }
+        return;
+      }
+
       // --- Recovery states ---
       if (state === FIGHTER_STATES.HIT_REACT || state === FIGHTER_STATES.KNOCKDOWN) {
         const recoverAt = STATE_RECOVERY_MS[state] || 300;
@@ -1766,6 +2022,9 @@
         setFighterState(fighter, FIGHTER_STATES.IDLE);
         return;
       }
+
+      // --- Dodge trigger (called externally via triggerDodge) ---
+      // Handled via processComboInput or direct call, state set elsewhere
 
       // --- Movement ---
       if (Math.abs(moveIntent) > 0.001) {
@@ -1861,6 +2120,127 @@
       p1.group.position.x = p1.x;
       p2.group.position.x = p2.x;
     }
+
+    // ===== SOUND MANAGER (Web Audio API — oscillator placeholders) =====
+    // Ported from jady-deth's PositionalAudio pattern: stop-then-play per action
+    const SFX = Object.freeze({
+      LIGHT_ATTACK: 'light_attack',
+      HEAVY_ATTACK: 'heavy_attack',
+      SPECIAL_ATTACK: 'special_attack',
+      BLOCK: 'block',
+      PARRY: 'parry',
+      HIT: 'hit',
+      PROJECTILE: 'projectile',
+      DODGE: 'dodge',
+      KO: 'ko',
+      WHOOSH: 'whoosh',
+    });
+
+    let audioCtx = null;
+    const activeSounds = {}; // track one active oscillator per type for stop-then-play
+
+    function initAudio() {
+      if (audioCtx) return;
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch (e) { console.warn('Web Audio not available'); }
+    }
+
+    // Synthesize a short sound using oscillators — no external files needed
+    function playSound(type) {
+      if (!audioCtx) initAudio();
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      // Stop previous instance of same type (jady-deth pattern)
+      if (activeSounds[type]) {
+        try { activeSounds[type].stop(); } catch (_) {}
+      }
+
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      switch (type) {
+        case SFX.LIGHT_ATTACK:
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(180, now + 0.08);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          osc.start(now); osc.stop(now + 0.1); break;
+        case SFX.HEAVY_ATTACK:
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+          osc.start(now); osc.stop(now + 0.18); break;
+        case SFX.SPECIAL_ATTACK:
+          osc.type = 'sine'; osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(1200, now + 0.15);
+          osc.frequency.exponentialRampToValueAtTime(200, now + 0.3);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc.start(now); osc.stop(now + 0.35); break;
+        case SFX.BLOCK:
+          osc.type = 'square'; osc.frequency.setValueAtTime(200, now);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.start(now); osc.stop(now + 0.06); break;
+        case SFX.PARRY:
+          osc.type = 'triangle'; osc.frequency.setValueAtTime(800, now);
+          osc.frequency.exponentialRampToValueAtTime(1600, now + 0.05);
+          osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          osc.start(now); osc.stop(now + 0.2); break;
+        case SFX.HIT:
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(120, now);
+          osc.frequency.exponentialRampToValueAtTime(60, now + 0.12);
+          gain.gain.setValueAtTime(0.22, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.start(now); osc.stop(now + 0.15); break;
+        case SFX.PROJECTILE:
+          osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(200, now + 0.25);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.start(now); osc.stop(now + 0.3); break;
+        case SFX.DODGE:
+          osc.type = 'sine'; osc.frequency.setValueAtTime(500, now);
+          osc.frequency.exponentialRampToValueAtTime(300, now + 0.12);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.start(now); osc.stop(now + 0.15); break;
+        case SFX.KO:
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, now);
+          osc.frequency.exponentialRampToValueAtTime(30, now + 0.5);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+          osc.start(now); osc.stop(now + 0.6); break;
+        default: // WHOOSH
+          osc.type = 'sine'; osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(150, now + 0.1);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          osc.start(now); osc.stop(now + 0.12); break;
+      }
+
+      activeSounds[type] = osc;
+      osc.onended = () => { if (activeSounds[type] === osc) delete activeSounds[type]; };
+    }
+
+    function playAttackSound(attackState) {
+      const def = DEFAULT_ATTACK_DEFS[attackState];
+      if (!def) return;
+      if (def.category === 'special') playSound(SFX.SPECIAL_ATTACK);
+      else if (def.category === 'heavy' || def.category === 'bridge') playSound(SFX.HEAVY_ATTACK);
+      else playSound(SFX.LIGHT_ATTACK);
+    }
+
+    // Initialize audio on first user interaction (browser autoplay policy)
+    document.addEventListener('pointerdown', initAudio, { once: true });
+    document.addEventListener('keydown', initAudio, { once: true });
 
     // ===== DEBUG VISUALIZATION =====
     function clearDebugHelpers() {
@@ -2058,6 +2438,8 @@
 
     function resolveProjectileHit(proj, defender) {
       if (proj.hasHit && !proj.piercing) return;
+      // Dodge invulnerability — projectiles pass through sidestepping fighters
+      if (defender.sidestepping) return false;
       // Build projectile hitbox
       const pBox = new THREE.Box3(
         new THREE.Vector3(proj.x - proj.hitboxHW, proj.y - proj.hitboxHH, -0.3),
@@ -2406,6 +2788,23 @@
       }
     }
 
+    // Compute bounds from renderable meshes only (ignore bones/helpers).
+    // Some rigs contain far-away helper bones (e.g. neutral_bone), which inflate
+    // full hierarchy bounds and make characters scale down to near-invisible.
+    function getRenderableBounds(root) {
+      const bounds = new THREE.Box3();
+      bounds.makeEmpty();
+      root.updateMatrixWorld(true);
+      root.traverse((child) => {
+        if (child.isMesh || child.isSkinnedMesh) {
+          const b = new THREE.Box3().setFromObject(child);
+          if (!b.isEmpty()) bounds.union(b);
+        }
+      });
+      if (bounds.isEmpty()) return new THREE.Box3().setFromObject(root);
+      return bounds;
+    }
+
     // Build a group from either individual GLB or legacy monolithic scene meshes.
     // Returns a THREE.Group scaled to `targetHeight` with feet at Y=0.
     // For rigged models: uses SkeletonUtils.clone() to preserve SkinnedMesh + Skeleton.
@@ -2450,7 +2849,7 @@
 
       // Normalize: scale to target height, center X/Z, feet at Y=0
       group.updateMatrixWorld(true);
-      const box = new THREE.Box3().setFromObject(group);
+      const box = getRenderableBounds(group);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
@@ -2748,9 +3147,9 @@
       document.getElementById('p2-hud-name').textContent = p2Char.name;
 
       gameState = {
-        p1: { group: p1Group, char: p1Char, hp: 100, maxHp: 100, x: -1.8, combo: 0, lastHit: 0, blocking: false, cooldown: 0, stunned: 0,
+        p1: { group: p1Group, char: p1Char, hp: 100, maxHp: 100, x: -1.8, combo: 0, lastHit: 0, blocking: false, cooldown: 0, stunned: 0, sidestepping: false,
                bounds: characterBounds[selectedP1], baseY: p1Group.position.y },
-        p2: { group: p2Group, char: p2Char, hp: 100, maxHp: 100, x: 1.8, combo: 0, lastHit: 0, blocking: false, cooldown: 0, stunned: 0, ai: true,
+        p2: { group: p2Group, char: p2Char, hp: 100, maxHp: 100, x: 1.8, combo: 0, lastHit: 0, blocking: false, cooldown: 0, stunned: 0, sidestepping: false, ai: true,
                bounds: characterBounds[selectedP2], baseY: p2Group.position.y },
         timer: 99,
         round: 1,
@@ -2784,7 +3183,7 @@
 
       // Measure final scaled dimensions for colliders.
       group.updateMatrixWorld(true);
-      const finalBox = new THREE.Box3().setFromObject(group);
+      const finalBox = getRenderableBounds(group);
       const finalSize = finalBox.getSize(new THREE.Vector3());
       characterBounds[charId] = {
         hw: finalSize.x / 2,   // half-width
@@ -2831,14 +3230,38 @@
     // ===== ATTACK LOGIC (Hitbox/Hurtbox) =====
     // Called by the combat state machine during active frames (once per attack).
     // Timing is governed by DEFAULT_ATTACK_DEFS — no cooldown set here.
+    // Trigger dodge for a fighter (jady-deth sidestep pattern)
+    function triggerDodge(fighter) {
+      if (!fighter?.combat || fighter.hp <= 0) return false;
+      const s = fighter.combat.state;
+      if (s === FIGHTER_STATES.KO || s === FIGHTER_STATES.KNOCKDOWN || s === FIGHTER_STATES.DODGE
+          || s === FIGHTER_STATES.HIT_REACT || s === FIGHTER_STATES.BLOCK_STUN
+          || isAttackState(s)) return false;
+      if (fighter.cooldown > 0 || fighter.stunned > 0) return false;
+      setFighterState(fighter, FIGHTER_STATES.DODGE, { force: true });
+      fighter.sidestepping = true;
+      fighter.cooldown = 600; // dodge cooldown (jady-deth: 1s, we use 0.6s for faster pace)
+      playSound(SFX.DODGE);
+      return true;
+    }
+
     function performAttack(attacker, defender, attackState) {
       const def = getAttackDef(attacker, attackState);
       if (!def) return;
 
+      // --- Sound on attack initiation ---
+      playAttackSound(attackState);
+
+      // --- Dodge invulnerability (jady-deth: sidestepping blocks all hits) ---
+      if (defender.sidestepping) {
+        playSound(SFX.WHOOSH); // whiff sound
+        return;
+      }
+
       // --- RANGED ATTACK: spawn projectile instead of melee hitbox ---
       if (def.ranged) {
         spawnProjectile(attacker, def, attackState);
-        // Spawn VFX at attacker (charging release effect)
+        playSound(SFX.PROJECTILE);
         const facingRight = attacker.group.rotation.y < Math.PI / 2;
         spawnSlashVFX(attacker.x + (facingRight ? 0.3 : -0.3), attacker.bounds.hh, facingRight, def.projColor || 0xeeb72b);
         spawnImpactSparks(attacker.x, attacker.bounds.hh, 4, def.projColor || 0xeeb72b);
@@ -2886,6 +3309,7 @@
           attacker.stunned = PARRY_STUN_MS;
           spawnParryVFX(defender, attacker);
           triggerScreenShake(0.18);
+          playSound(SFX.PARRY);
           return; // no damage on parry
         }
       }
@@ -2904,6 +3328,7 @@
         finalDmg = Math.max(1, Math.floor(baseDmg * 0.2));
         // Heavy finishers and specials cause block stun
         if (def.category === 'special') attacker.stunned = 600;
+        playSound(SFX.BLOCK);
       } else {
         finalDmg = Math.max(1, baseDmg - Math.floor(defender.char.def * 0.3));
       }
@@ -2923,10 +3348,14 @@
 
       defender.hp = Math.max(0, defender.hp - finalDmg);
 
+      // Hit confirmation sound (jady-deth pattern: play hit sfx on confirmed damage)
+      if (!defender.blocking) playSound(SFX.HIT);
+
       // Visual feedback — push into hit_react or knockdown via state machine
       if (defender.combat) {
         if (defender.hp <= 0) {
           setFighterState(defender, FIGHTER_STATES.KO, { force: true });
+          playSound(SFX.KO);
         } else if (def.knocksDown && !defender.blocking) {
           setFighterState(defender, FIGHTER_STATES.KNOCKDOWN, { force: true });
         } else if (!defender.blocking) {
@@ -2959,7 +3388,35 @@
       }
     }
 
-    // ===== AI =====
+    // ===== AI (jady-deth interval pattern + no-repeat + dodge reaction) =====
+    let aiAttackTimer = 0;
+    let aiLastAttacks = [null, null]; // track last 2 for no-repeat rule (Deth.jsx:51-56)
+
+    function getAIAttackInterval(ai) {
+      // Difficulty scaling: faster attacks as AI loses health (5s → 2s)
+      const hpRatio = ai.hp / ai.maxHp;
+      return 2000 + hpRatio * 3000; // 5000ms at full HP, 2000ms at 0 HP
+    }
+
+    function aiChooseAttack() {
+      // jady-deth no-repeat: if last two were same category, force different
+      const categories = ['light', 'heavy', 'special'];
+      let choice;
+      if (aiLastAttacks[0] === aiLastAttacks[1] && aiLastAttacks[0] !== null) {
+        // Force different
+        const others = categories.filter(c => c !== aiLastAttacks[0]);
+        choice = others[Math.floor(Math.random() * others.length)];
+      } else {
+        // Weighted random: 40% light, 35% heavy, 25% special
+        const r = Math.random();
+        if (r < 0.40) choice = 'light';
+        else if (r < 0.75) choice = 'heavy';
+        else choice = 'special';
+      }
+      aiLastAttacks = [aiLastAttacks[1], choice];
+      return choice;
+    }
+
     function updateAI(dt) {
       if (!gameState || gameState.paused) return;
       const ai = gameState.p2;
@@ -2978,7 +3435,8 @@
         || ai.combat?.state === FIGHTER_STATES.KNOCKDOWN
         || ai.combat?.state === FIGHTER_STATES.KO
         || ai.combat?.state === FIGHTER_STATES.PARRY
-        || ai.combat?.state === FIGHTER_STATES.BLOCK_STUN;
+        || ai.combat?.state === FIGHTER_STATES.BLOCK_STUN
+        || ai.combat?.state === FIGHTER_STATES.DODGE;
       if (!aiLocked) {
         const moveSpeed = 1.5 * (ai.char.spd / 10);
         if (dist > 1.2) {
@@ -2995,19 +3453,38 @@
       // Face player
       ai.group.rotation.y = player.x < ai.x ? 0 : Math.PI;
 
-      // AI decide to block or attack
+      // --- Interval-based attack (jady-deth Deth.jsx:121 pattern) ---
+      aiAttackTimer += dt;
+      const interval = getAIAttackInterval(ai);
       let aiBlock = false;
-      if (dist < 1.5 && ai.cooldown <= 0 && ai.stunned <= 0 && !aiLocked) {
-        const roll = Math.random();
-        if (roll < 0.15) {
-          aiBlock = true;
-        } else if (roll < 0.5) {
-          processComboInput(ai, 'light');
-        } else if (roll < 0.8) {
-          processComboInput(ai, 'heavy');
-        } else {
-          processComboInput(ai, 'special');
+
+      if (aiAttackTimer >= interval && !aiLocked && ai.cooldown <= 0 && ai.stunned <= 0) {
+        aiAttackTimer = 0;
+
+        if (dist < 1.8) {
+          // In range: attack with no-repeat selection
+          const category = aiChooseAttack();
+          processComboInput(ai, category);
+        } else if (dist < 3.0) {
+          // Mid-range: sometimes block, sometimes approach
+          if (Math.random() < 0.3) aiBlock = true;
         }
+      }
+
+      // --- Dodge reaction: AI sidesteps player heavy/special attacks (20% chance) ---
+      if (!aiLocked && ai.cooldown <= 0 && isAttackState(player.combat?.state)) {
+        const playerDef = getAttackDef(player, player.combat.attackType);
+        if (playerDef && (playerDef.category === 'heavy' || playerDef.category === 'special')
+            && player.combat.stateTime < playerDef.activeStart) {
+          if (Math.random() < 0.003) { // ~20% over windup frames at 60fps
+            triggerDodge(ai);
+          }
+        }
+      }
+
+      // --- Blocking: AI blocks briefly when close and not attacking ---
+      if (!aiLocked && dist < 1.0 && isAttackState(player.combat?.state) && Math.random() < 0.01) {
+        aiBlock = true;
       }
 
       // Update AI state machine
@@ -3128,8 +3605,20 @@
         if (gpActionDown('kick')) processComboInput(p1, 'heavy');
         if (gpActionDown('special')) processComboInput(p1, 'special');
 
-        // Block: keyboard OR gamepad held
-        const blockHeld = !!keys[kbBinds.block] || gpActionHeld('block');
+        // Dodge: double-tap block or tap when not holding
+        // Track block press timing for dodge vs block disambiguation
+        const blockPressed = !!keys[kbBinds.block] || gpActionHeld('block');
+        if (blockPressed && !gameState._blockWasHeld) {
+          gameState._blockPressTime = now;
+        }
+        gameState._blockWasHeld = blockPressed;
+
+        // Dodge on block release within 150ms (quick tap = dodge, hold = block)
+        const blockHeld = blockPressed && (now - (gameState._blockPressTime || 0) > 150);
+        if (!blockPressed && gameState._blockPressTime && (now - gameState._blockPressTime <= 150)) {
+          triggerDodge(p1);
+          gameState._blockPressTime = 0;
+        }
 
         // Update state machines (state machine drives blocking, not raw key)
         updateFighterStateMachine(p1, gameState.p2, dt, p1MoveIntent, blockHeld);
@@ -3148,7 +3637,16 @@
 
       // Always update animations + VFX + shake (even when paused — KO / victory still animate)
       if (gameState) {
-        // Real Mixamo/rigged animation mixers — procedural fallback removed
+        // --- Dodge Z-axis lerp (jady-deth damp pattern) ---
+        const dampFactor = 1 - Math.pow(0.05, dt / 200); // exponential damp ~0.75 smoothing
+        for (const f of [gameState.p1, gameState.p2]) {
+          const targetZ = f.sidestepping ? -0.8 : 0;
+          f.group.position.z += (targetZ - f.group.position.z) * dampFactor;
+          // Clear sidestepping flag when dodge state ends
+          if (f.combat?.state !== FIGHTER_STATES.DODGE) f.sidestepping = false;
+        }
+
+        // Animation mixers
         if (gameState.p1.animation?.mixer) gameState.p1.animation.mixer.update(dt / 1000);
         if (gameState.p2.animation?.mixer) gameState.p2.animation.mixer.update(dt / 1000);
         updateVFX(dt);
@@ -3247,6 +3745,8 @@
       battleActive = true;
       gameState.paused = false;
       gameState.lastTimerTick = Date.now();
+      aiAttackTimer = 0;
+      aiLastAttacks = [null, null];
     };
 
     // ===== RESIZE =====
