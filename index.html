@@ -686,6 +686,19 @@
       return chain;
     }
 
+    // Count bone descendants recursively
+    function _countBoneDescendants(bone) {
+      let count = 0;
+      const stack = [bone];
+      while (stack.length) {
+        const b = stack.pop();
+        for (const c of b.children) {
+          if (c.isBone) { count++; stack.push(c); }
+        }
+      }
+      return count;
+    }
+
     function detectBoneMap(skeletonRoot) {
       // Collect all bones
       const allBones = [];
@@ -694,28 +707,49 @@
 
       // Find root bone (bone_0 — no bone parent)
       const rootBone = allBones.find(b => !b.parent?.isBone) || allBones[0];
-      const map = { hips: rootB.name };
+      const map = { hips: rootBone.name };
 
-      // Find spine: from root’s bone children, pick the one going most upward
-      const rootKids = rootB.children.filter(c => c.isBone);
+      // Find spine: the root child with the MOST bone descendants
+      // (spine leads to chest → arms → fingers = many; legs have few)
+      const rootKids = rootBone.children.filter(c => c.isBone);
       if (rootKids.length === 0) return map;
-
-      // Spine child: smallest absolute X offset (most central) and positive or small-negative Y
       let spineStart = rootKids[0];
-      let bestScore = Infinity;
+      let bestDesc = -1;
       for (const k of rootKids) {
-        const score = Math.abs(k.position.x) * 3 - k.position.y; // prefer central + upward
-        if (score < bestScore) { bestScore = score; spineStart = k; }
+        const d = _countBoneDescendants(k);
+        if (d > bestDesc) { bestDesc = d; spineStart = k; }
       }
 
-      // Follow spine upward until it branches into ≥2 bone children
+      // Follow spine upward: at each branch point, continue with the child
+      // that has the most descendants (spine continuation, not legs/cloth).
+      // Collect skipped branches as potential leg/cloth candidates.
       const spineChain = [spineStart];
+      const skippedBranches = []; // branches skipped during spine traversal (legs, cloth)
       let chest = spineStart;
       while (true) {
         const kids = chest.children.filter(c => c.isBone);
-        if (kids.length !== 1) break; // branch point or end
-        chest = kids[0];
-        spineChain.push(chest);
+        if (kids.length === 0) break;
+        if (kids.length === 1) {
+          chest = kids[0];
+          spineChain.push(chest);
+          continue;
+        }
+        // Multiple children: pick the one with most descendants as spine continuation
+        let bestKid = null, bestKidDesc = -1;
+        for (const k of kids) {
+          const d = _countBoneDescendants(k);
+          if (d > bestKidDesc) { bestKidDesc = d; bestKid = k; }
+        }
+        // If the best child has significantly more descendants than others, it's spine
+        const secondBest = kids.filter(k => k !== bestKid).reduce((max, k) => Math.max(max, _countBoneDescendants(k)), 0);
+        if (bestKidDesc > secondBest * 1.5 && kids.length > 2) {
+          // Spine continuation — others are legs/cloth
+          skippedBranches.push(...kids.filter(k => k !== bestKid));
+          chest = bestKid;
+          spineChain.push(chest);
+          continue;
+        }
+        break; // True branch point (chest)
       }
 
       // Store spine bones
@@ -757,11 +791,17 @@
       mapArm(rArmStart, 'r');
       mapArm(lArmStart, 'l');
 
-      // Legs: from root’s bone children (excluding spine), or from spine1’s children
-      const legCandidates = rootKids.filter(k => k !== spineStart);
-      // If root only had 1 child (spine), check spine1 for leg branches
-      const legPool = legCandidates.length >= 2 ? legCandidates :
-        spineStart.children.filter(c => c.isBone && c !== spineChain[1] && c !== chest);
+      // Legs: from root’s bone children (excluding spine) + branches
+      // skipped during spine traversal (e.g. Model001 legs branch from bone_1)
+      const legCandidates = [
+        ...rootKids.filter(k => k !== spineStart),
+        ...skippedBranches,
+      ];      // Sort by descendant count descending, take only bones with <=5 descendants (legs, not cloth)
+      const legPool = legCandidates
+        .map(k => ({ bone: k, desc: _countBoneDescendants(k) }))
+        .filter(e => e.desc >= 1 && e.desc <= 5)
+        .sort((a, b) => b.desc - a.desc)
+        .map(e => e.bone);
       let rLegStart = null, lLegStart = null;
       for (const k of legPool) {
         if (k.position.x > 0 && !rLegStart) rLegStart = k;
