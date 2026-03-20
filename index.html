@@ -609,6 +609,7 @@
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
     // ===== CHARACTER DATA =====
     const CHARACTERS = [
@@ -629,18 +630,18 @@
     // ===== WEAPON DATA =====
     // Maps each character to weapon type, mesh identifiers, grip bone, and offset
     const WEAPON_DATA = {
-      Model001: { type: 'sword',       meshHints: ['caopi-R-weapon'],                       gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model001_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model002: { type: 'staff',        meshHints: [],                                       gripBone: 'mixamorigRightHand', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model003: { type: 'axe',          meshHints: ['DW-weapon'],                            gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model003_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model004: { type: 'fan',          meshHints: ['DC-weapon'],                            gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model004_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model005: { type: 'mace',         meshHints: ['dongzhuo-weapon'],                      gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model005_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model006: { type: 'staff',        meshHints: [],                                       gripBone: 'mixamorigRightHand', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model001: { type: 'sword',       meshHints: ['caopi-R-weapon'],                       gripBone: 'bone_9', weapon_glb: './characters/weapons/Model001_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model002: { type: 'staff',        meshHints: [],                                       gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model003: { type: 'axe',          meshHints: ['DW-weapon'],                            gripBone: 'bone_9', weapon_glb: './characters/weapons/Model003_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model004: { type: 'fan',          meshHints: ['DC-weapon'],                            gripBone: 'bone_9', weapon_glb: './characters/weapons/Model004_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model005: { type: 'mace',         meshHints: ['dongzhuo-weapon'],                      gripBone: 'bone_9', weapon_glb: './characters/weapons/Model005_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model006: { type: 'staff',        meshHints: [],                                       gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
       Model007: { type: 'unarmed',      meshHints: [],                                       gripBone: null, weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model008: { type: 'crossbow',     meshHints: ['yingwu-wing'],                          gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model008_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model009: { type: 'dual_blade',   meshHints: [],                                       gripBone: 'mixamorigRightHand', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model010: { type: 'dual_sword',   meshHints: ['liubei-m-weapon', 'liubei-weapon'],     gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model010_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model011: { type: 'spear',        meshHints: [],                                       gripBone: 'mixamorigRightHand', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model012: { type: 'sword',        meshHints: ['LM-sword'],                             gripBone: 'mixamorigRightHand', weapon_glb: './characters/weapons/Model012_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model008: { type: 'crossbow',     meshHints: ['yingwu-wing'],                          gripBone: 'bone_9', weapon_glb: './characters/weapons/Model008_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model009: { type: 'dual_blade',   meshHints: [],                                       gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model010: { type: 'dual_sword',   meshHints: ['liubei-m-weapon', 'liubei-weapon'],     gripBone: 'bone_9', weapon_glb: './characters/weapons/Model010_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model011: { type: 'spear',        meshHints: [],                                       gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model012: { type: 'sword',        meshHints: ['LM-sword'],                             gripBone: 'bone_9', weapon_glb: './characters/weapons/Model012_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
     };
 
     // ===== WEAPON ATTACK MAPPING =====
@@ -657,6 +658,204 @@
       staff:      { attack_1: 'staff_strike_1', attack_2: 'staff_strike_2', attack_3: 'staff_sweep', attack_4: 'staff_slam', attack_5: 'spin_staff', attack_6: 'overhead', attack_7: 'quick_jab', attack_8: 'magic_blast', attack_9: 'arcane_storm', attack_10: 'elemental_fury' },
       unarmed:    { attack_1: 'punch_1', attack_2: 'punch_2', attack_3: 'punch_3', attack_4: 'elbow', attack_5: 'hook', attack_6: 'uppercut', attack_7: 'quick_jab', attack_8: 'knee_strike', attack_9: 'dragon_fist', attack_10: 'fury_combo' },
     };
+
+    // ===== BONE MAP (UniRig auto-rigged skeleton) =====
+    const BONE = {
+      hips: 'bone_0', spine1: 'bone_1', spine2: 'bone_2', chest: 'bone_3',
+      neck: 'bone_4', head: 'bone_5',
+      rShoulder: 'bone_6', rUpperArm: 'bone_7', rForearm: 'bone_8', rHand: 'bone_9',
+      lShoulder: 'bone_25', lUpperArm: 'bone_26', lForearm: 'bone_27', lHand: 'bone_28',
+      rHip: 'bone_44', rThigh: 'bone_45', rShin: 'bone_46', rFoot: 'bone_47',
+      lHip: 'bone_48', lThigh: 'bone_49', lShin: 'bone_50', lFoot: 'bone_51',
+    };
+
+    // Euler helper → quaternion array for keyframe tracks
+    function _eq(x, y, z) {
+      const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z));
+      return [q.x, q.y, q.z, q.w];
+    }
+    const _ID = _eq(0, 0, 0); // identity quaternion
+
+    // Build a QuaternionKeyframeTrack for a bone
+    function _boneTrack(boneName, times, quats) {
+      const values = quats.flat();
+      return new THREE.QuaternionKeyframeTrack(`${boneName}.quaternion`, times, values);
+    }
+
+    // Generate procedural AnimationClips for all combat states
+    function generateProceduralClips() {
+      const clips = {};
+      const PI = Math.PI, H = PI / 2, Q = PI / 4, E = PI / 8;
+
+      // --- IDLE: gentle breathing sway ---
+      clips.idle = new THREE.AnimationClip('idle', 2.0, [
+        _boneTrack(BONE.spine1, [0, 1, 2], [_eq(0.02,0,0), _eq(-0.02,0,0), _eq(0.02,0,0)]),
+        _boneTrack(BONE.chest,  [0, 1, 2], [_eq(0.01,0,0), _eq(-0.01,0,0), _eq(0.01,0,0)]),
+        _boneTrack(BONE.rUpperArm, [0, 1, 2], [_eq(0,0,-0.15), _eq(0,0,-0.12), _eq(0,0,-0.15)]),
+        _boneTrack(BONE.lUpperArm, [0, 1, 2], [_eq(0,0,0.15), _eq(0,0,0.12), _eq(0,0,0.15)]),
+        _boneTrack(BONE.rForearm, [0, 1, 2], [_eq(-0.3,0,0), _eq(-0.25,0,0), _eq(-0.3,0,0)]),
+        _boneTrack(BONE.lForearm, [0, 1, 2], [_eq(-0.3,0,0), _eq(-0.25,0,0), _eq(-0.3,0,0)]),
+      ]);
+
+      // --- WALK FORWARD: alternating legs + arm swing ---
+      clips.walk_fwd = new THREE.AnimationClip('walk_fwd', 0.8, [
+        _boneTrack(BONE.rThigh, [0, 0.2, 0.4, 0.6, 0.8], [_eq(-0.4,0,0), _eq(0,0,0), _eq(0.3,0,0), _eq(0,0,0), _eq(-0.4,0,0)]),
+        _boneTrack(BONE.lThigh, [0, 0.2, 0.4, 0.6, 0.8], [_eq(0.3,0,0), _eq(0,0,0), _eq(-0.4,0,0), _eq(0,0,0), _eq(0.3,0,0)]),
+        _boneTrack(BONE.rShin,  [0, 0.2, 0.4, 0.6, 0.8], [_eq(0.5,0,0), _eq(0.1,0,0), _eq(0.05,0,0), _eq(0.1,0,0), _eq(0.5,0,0)]),
+        _boneTrack(BONE.lShin,  [0, 0.2, 0.4, 0.6, 0.8], [_eq(0.05,0,0), _eq(0.1,0,0), _eq(0.5,0,0), _eq(0.1,0,0), _eq(0.05,0,0)]),
+        _boneTrack(BONE.rUpperArm, [0, 0.4, 0.8], [_eq(0.3,0,-0.1), _eq(-0.2,0,-0.1), _eq(0.3,0,-0.1)]),
+        _boneTrack(BONE.lUpperArm, [0, 0.4, 0.8], [_eq(-0.2,0,0.1), _eq(0.3,0,0.1), _eq(-0.2,0,0.1)]),
+        _boneTrack(BONE.hips, [0, 0.2, 0.4, 0.6, 0.8], [_eq(0,0.03,0), _eq(0,0,0), _eq(0,-0.03,0), _eq(0,0,0), _eq(0,0.03,0)]),
+      ]);
+
+      // --- WALK BACK ---
+      clips.walk_back = new THREE.AnimationClip('walk_back', 0.9, [
+        _boneTrack(BONE.rThigh, [0, 0.45, 0.9], [_eq(0.25,0,0), _eq(-0.3,0,0), _eq(0.25,0,0)]),
+        _boneTrack(BONE.lThigh, [0, 0.45, 0.9], [_eq(-0.3,0,0), _eq(0.25,0,0), _eq(-0.3,0,0)]),
+        _boneTrack(BONE.chest, [0, 0.45, 0.9], [_eq(-0.05,0,0), _eq(-0.03,0,0), _eq(-0.05,0,0)]),
+      ]);
+
+      // --- BLOCK: arms raised guard ---
+      clips.block = new THREE.AnimationClip('block', 0.6, [
+        _boneTrack(BONE.rUpperArm, [0, 0.15, 0.6], [_ID, _eq(-H*0.9,0,-0.3), _eq(-H*0.9,0,-0.3)]),
+        _boneTrack(BONE.rForearm,  [0, 0.15, 0.6], [_ID, _eq(-H*0.8,0,0), _eq(-H*0.8,0,0)]),
+        _boneTrack(BONE.lUpperArm, [0, 0.15, 0.6], [_ID, _eq(-H*0.9,0,0.3), _eq(-H*0.9,0,0.3)]),
+        _boneTrack(BONE.lForearm,  [0, 0.15, 0.6], [_ID, _eq(-H*0.8,0,0), _eq(-H*0.8,0,0)]),
+        _boneTrack(BONE.chest, [0, 0.15, 0.6], [_ID, _eq(-0.1,0,0), _eq(-0.1,0,0)]),
+      ]);
+
+      // --- DODGE: sidestep lean ---
+      clips.dodge = new THREE.AnimationClip('dodge', 0.35, [
+        _boneTrack(BONE.hips,  [0, 0.12, 0.35], [_ID, _eq(0,0,0.3), _ID]),
+        _boneTrack(BONE.chest, [0, 0.12, 0.35], [_ID, _eq(0,0,-0.2), _ID]),
+        _boneTrack(BONE.rThigh,[0, 0.12, 0.35], [_ID, _eq(-0.4,0,0.3), _ID]),
+        _boneTrack(BONE.lThigh,[0, 0.12, 0.35], [_ID, _eq(0.3,0,-0.2), _ID]),
+      ]);
+
+      // --- HIT REACT: jerk back ---
+      clips.hit_react = new THREE.AnimationClip('hit_react', 0.26, [
+        _boneTrack(BONE.chest, [0, 0.06, 0.26], [_ID, _eq(-0.25,0,0.05), _eq(-0.05,0,0)]),
+        _boneTrack(BONE.head,  [0, 0.06, 0.26], [_ID, _eq(-0.2,0.1,0), _ID]),
+        _boneTrack(BONE.hips,  [0, 0.06, 0.26], [_ID, _eq(-0.05,0,0), _ID]),
+      ]);
+
+      // --- KNOCKDOWN: fall backward ---
+      clips.knockdown = new THREE.AnimationClip('knockdown', 0.9, [
+        _boneTrack(BONE.hips,  [0, 0.2, 0.5, 0.9], [_ID, _eq(-0.3,0,0), _eq(-H,0,0), _eq(-H,0,0)]),
+        _boneTrack(BONE.chest, [0, 0.2, 0.9], [_ID, _eq(-0.4,0,0), _eq(-0.2,0,0)]),
+        _boneTrack(BONE.rThigh,[0, 0.3, 0.9], [_ID, _eq(-0.8,0,0), _eq(0.1,0,0.2)]),
+        _boneTrack(BONE.lThigh,[0, 0.3, 0.9], [_ID, _eq(-0.8,0,0), _eq(0.1,0,-0.2)]),
+        _boneTrack(BONE.rUpperArm,[0, 0.3, 0.9], [_ID, _eq(0,0,-H*0.6), _eq(0.2,0,-0.3)]),
+        _boneTrack(BONE.lUpperArm,[0, 0.3, 0.9], [_ID, _eq(0,0,H*0.6), _eq(0.2,0,0.3)]),
+      ]);
+
+      // --- KO: dramatic collapse ---
+      clips.ko = new THREE.AnimationClip('ko', 1.2, [
+        _boneTrack(BONE.hips,  [0, 0.3, 0.6, 1.2], [_ID, _eq(-0.15,0.1,0), _eq(-H*0.8,0.1,0), _eq(-H*0.9,0,0.1)]),
+        _boneTrack(BONE.chest, [0, 0.3, 1.2], [_ID, _eq(-0.5,0,0.1), _eq(-0.3,0,0)]),
+        _boneTrack(BONE.head,  [0, 0.3, 1.2], [_ID, _eq(-0.3,0.2,0), _eq(0.1,-0.1,0.2)]),
+        _boneTrack(BONE.rUpperArm,[0, 0.4, 1.2], [_ID, _eq(0.3,0.2,-H*0.5), _eq(0.1,0,-0.2)]),
+        _boneTrack(BONE.lUpperArm,[0, 0.4, 1.2], [_ID, _eq(0.3,-0.2,H*0.5), _eq(0.1,0,0.2)]),
+        _boneTrack(BONE.rThigh,[0, 0.4, 1.2], [_ID, _eq(-0.6,0,0.2), _eq(0.1,0,0.15)]),
+        _boneTrack(BONE.lThigh,[0, 0.4, 1.2], [_ID, _eq(-0.6,0,-0.2), _eq(0.1,0,-0.15)]),
+      ]);
+
+      // --- VICTORY: arms raised triumphantly ---
+      clips.victory = new THREE.AnimationClip('victory', 2.0, [
+        _boneTrack(BONE.rUpperArm, [0, 0.4, 1.0, 2.0], [_ID, _eq(-H*0.9,0,-0.3), _eq(-H*0.7,0,-0.2), _eq(-H*0.9,0,-0.3)]),
+        _boneTrack(BONE.lUpperArm, [0, 0.4, 1.0, 2.0], [_ID, _eq(-H*0.9,0,0.3), _eq(-H*0.7,0,0.2), _eq(-H*0.9,0,0.3)]),
+        _boneTrack(BONE.rForearm, [0, 0.4, 2.0], [_ID, _eq(-0.6,0,0), _eq(-0.6,0,0)]),
+        _boneTrack(BONE.lForearm, [0, 0.4, 2.0], [_ID, _eq(-0.6,0,0), _eq(-0.6,0,0)]),
+        _boneTrack(BONE.chest, [0, 0.5, 1.0, 2.0], [_ID, _eq(-0.1,0,0), _eq(0.05,0,0), _eq(-0.1,0,0)]),
+      ]);
+
+      // --- STUN: dazed wobble ---
+      clips.stun = new THREE.AnimationClip('stun', 0.5, [
+        _boneTrack(BONE.head,  [0, 0.15, 0.3, 0.5], [_ID, _eq(0,0.15,0.1), _eq(0,-0.15,-0.1), _ID]),
+        _boneTrack(BONE.chest, [0, 0.25, 0.5], [_eq(-0.08,0,0), _eq(-0.06,0.05,0), _eq(-0.08,0,0)]),
+      ]);
+
+      // --- PARRY: deflect pose ---
+      clips.parry = new THREE.AnimationClip('parry', 0.3, [
+        _boneTrack(BONE.rUpperArm, [0, 0.08, 0.3], [_ID, _eq(-0.5,0.4,-0.6), _eq(-0.3,0,-0.2)]),
+        _boneTrack(BONE.rForearm,  [0, 0.08, 0.3], [_ID, _eq(-0.8,0,0), _eq(-0.3,0,0)]),
+        _boneTrack(BONE.chest, [0, 0.08, 0.3], [_ID, _eq(0,0.15,0), _eq(0,0.05,0)]),
+      ]);
+
+      // --- BLOCK STUN: recoil from parried ---
+      clips.block_stun = new THREE.AnimationClip('block_stun', 0.6, [
+        _boneTrack(BONE.chest, [0, 0.1, 0.6], [_ID, _eq(-0.2,-0.1,0), _eq(-0.05,0,0)]),
+        _boneTrack(BONE.rUpperArm, [0, 0.1, 0.6], [_ID, _eq(0.3,0,-0.5), _eq(0,0,-0.15)]),
+        _boneTrack(BONE.lUpperArm, [0, 0.1, 0.6], [_ID, _eq(0.3,0,0.5), _eq(0,0,0.15)]),
+      ]);
+
+      // --- ATTACKS 1-10: varied combat strikes ---
+      // Light chain: 1→2→3
+      clips.attack_1 = new THREE.AnimationClip('attack_1', 0.35, [
+        _boneTrack(BONE.rUpperArm, [0, 0.1, 0.25, 0.35], [_eq(0,0,-0.2), _eq(-0.8,0.3,-0.5), _eq(-0.3,0,-0.2), _eq(0,0,-0.15)]),
+        _boneTrack(BONE.rForearm,  [0, 0.1, 0.25, 0.35], [_eq(-0.3,0,0), _eq(-0.9,0,0), _eq(-0.4,0,0), _eq(-0.3,0,0)]),
+        _boneTrack(BONE.chest, [0, 0.08, 0.2, 0.35], [_ID, _eq(0,0.2,0), _eq(0,0.05,0), _ID]),
+      ]);
+      clips.attack_2 = new THREE.AnimationClip('attack_2', 0.32, [
+        _boneTrack(BONE.lUpperArm, [0, 0.08, 0.22, 0.32], [_eq(0,0,0.2), _eq(-0.7,-0.3,0.5), _eq(-0.3,0,0.2), _eq(0,0,0.15)]),
+        _boneTrack(BONE.lForearm,  [0, 0.08, 0.22, 0.32], [_eq(-0.3,0,0), _eq(-0.8,0,0), _eq(-0.4,0,0), _eq(-0.3,0,0)]),
+        _boneTrack(BONE.chest, [0, 0.06, 0.18, 0.32], [_ID, _eq(0,-0.2,0), _eq(0,-0.05,0), _ID]),
+      ]);
+      clips.attack_3 = new THREE.AnimationClip('attack_3', 0.4, [
+        _boneTrack(BONE.rUpperArm, [0, 0.12, 0.28, 0.4], [_eq(-0.3,0,-0.2), _eq(-H,0.5,-0.6), _eq(-0.5,0.1,-0.3), _eq(0,0,-0.15)]),
+        _boneTrack(BONE.rForearm,  [0, 0.12, 0.28, 0.4], [_eq(-0.4,0,0), _eq(-1.0,0,0), _eq(-0.5,0,0), _eq(-0.3,0,0)]),
+        _boneTrack(BONE.chest, [0, 0.1, 0.25, 0.4], [_ID, _eq(0.08,0.25,0), _eq(0,0.1,0), _ID]),
+        _boneTrack(BONE.hips, [0, 0.1, 0.4], [_ID, _eq(0,0.1,0), _ID]),
+      ]);
+      // Heavy chain: 4→5→6
+      clips.attack_4 = new THREE.AnimationClip('attack_4', 0.45, [
+        _boneTrack(BONE.rUpperArm, [0, 0.15, 0.3, 0.45], [_eq(0,0,-0.2), _eq(-H*1.1,0,-0.4), _eq(-0.4,0.2,-0.3), _eq(0,0,-0.15)]),
+        _boneTrack(BONE.rForearm,  [0, 0.15, 0.3, 0.45], [_eq(-0.2,0,0), _eq(-0.4,0,0), _eq(-0.8,0,0), _eq(-0.3,0,0)]),
+        _boneTrack(BONE.chest, [0, 0.12, 0.3, 0.45], [_ID, _eq(-0.15,0,0), _eq(0.12,0.15,0), _ID]),
+        _boneTrack(BONE.rThigh,[0, 0.15, 0.45], [_ID, _eq(-0.15,0,0), _ID]),
+      ]);
+      clips.attack_5 = new THREE.AnimationClip('attack_5', 0.5, [
+        _boneTrack(BONE.rUpperArm, [0, 0.18, 0.35, 0.5], [_eq(0,0,-0.3), _eq(-0.4,H*0.6,-0.6), _eq(-0.3,0,-0.2), _eq(0,0,-0.15)]),
+        _boneTrack(BONE.lUpperArm, [0, 0.18, 0.35, 0.5], [_eq(0,0,0.2), _eq(-0.6,-0.3,0.4), _eq(-0.2,0,0.15), _eq(0,0,0.15)]),
+        _boneTrack(BONE.chest, [0, 0.15, 0.35, 0.5], [_ID, _eq(0,0.3,0), _eq(0,-0.05,0), _ID]),
+        _boneTrack(BONE.hips,  [0, 0.15, 0.5], [_ID, _eq(0,0.15,0), _ID]),
+      ]);
+      clips.attack_6 = new THREE.AnimationClip('attack_6', 0.55, [
+        _boneTrack(BONE.chest, [0, 0.15, 0.35, 0.55], [_ID, _eq(0,-0.2,0), _eq(0.1,H*0.7,0), _eq(0,0.1,0)]),
+        _boneTrack(BONE.rUpperArm, [0, 0.15, 0.35, 0.55], [_eq(0,0,-0.3), _eq(-0.5,-0.3,-0.5), _eq(-0.8,0.6,-0.6), _eq(0,0,-0.15)]),
+        _boneTrack(BONE.lUpperArm, [0, 0.15, 0.35, 0.55], [_eq(0,0,0.3), _eq(-0.5,0.3,0.5), _eq(-0.8,-0.6,0.6), _eq(0,0,0.15)]),
+        _boneTrack(BONE.hips, [0, 0.15, 0.35, 0.55], [_ID, _eq(0,-0.2,0), _eq(0,0.5,0), _eq(0,0.05,0)]),
+      ]);
+      // Bridge moves: 7, 8
+      clips.attack_7 = new THREE.AnimationClip('attack_7', 0.38, [
+        _boneTrack(BONE.rUpperArm, [0, 0.1, 0.25, 0.38], [_eq(0,0,-0.2), _eq(-0.6,0.4,-0.7), _eq(-0.2,0,-0.2), _eq(0,0,-0.15)]),
+        _boneTrack(BONE.rForearm,  [0, 0.1, 0.38], [_eq(-0.3,0,0), _eq(-1.0,0,0), _eq(-0.3,0,0)]),
+        _boneTrack(BONE.chest, [0, 0.08, 0.38], [_ID, _eq(0.05,0.15,0), _ID]),
+      ]);
+      clips.attack_8 = new THREE.AnimationClip('attack_8', 0.4, [
+        _boneTrack(BONE.lUpperArm, [0, 0.12, 0.28, 0.4], [_eq(0,0,0.2), _eq(-0.9,-0.3,0.4), _eq(-0.3,0,0.2), _eq(0,0,0.15)]),
+        _boneTrack(BONE.lForearm,  [0, 0.12, 0.4], [_eq(-0.3,0,0), _eq(-0.9,0,0), _eq(-0.3,0,0)]),
+        _boneTrack(BONE.rThigh,[0, 0.12, 0.28, 0.4], [_ID, _eq(-0.6,0,0), _eq(-0.2,0,0), _ID]),
+        _boneTrack(BONE.chest, [0, 0.1, 0.4], [_ID, _eq(0,-0.15,0), _ID]),
+      ]);
+      // Specials: 9, 10
+      clips.attack_9 = new THREE.AnimationClip('attack_9', 0.6, [
+        _boneTrack(BONE.rUpperArm, [0, 0.15, 0.35, 0.6], [_eq(0,0,-0.3), _eq(-H,0,-H*0.8), _eq(-0.5,0.4,-0.4), _eq(0,0,-0.15)]),
+        _boneTrack(BONE.lUpperArm, [0, 0.15, 0.35, 0.6], [_eq(0,0,0.3), _eq(-H,0,H*0.8), _eq(-0.5,-0.4,0.4), _eq(0,0,0.15)]),
+        _boneTrack(BONE.chest, [0, 0.12, 0.35, 0.6], [_ID, _eq(-0.15,0,0), _eq(0.1,0.3,0), _ID]),
+        _boneTrack(BONE.hips, [0, 0.12, 0.35, 0.6], [_ID, _eq(-0.08,0,0), _eq(0,0.2,0), _ID]),
+      ]);
+      clips.attack_10 = new THREE.AnimationClip('attack_10', 0.75, [
+        _boneTrack(BONE.chest, [0, 0.15, 0.3, 0.5, 0.75], [_ID, _eq(-0.2,0,0), _eq(0.1,H*0.5,0), _eq(0.1,H,0), _eq(0,0.1,0)]),
+        _boneTrack(BONE.rUpperArm, [0, 0.15, 0.3, 0.5, 0.75], [_eq(0,0,-0.3), _eq(-0.4,-0.2,-0.5), _eq(-H,0.5,-0.6), _eq(-0.6,0.8,-0.5), _eq(0,0,-0.15)]),
+        _boneTrack(BONE.lUpperArm, [0, 0.15, 0.3, 0.5, 0.75], [_eq(0,0,0.3), _eq(-0.4,0.2,0.5), _eq(-H,-0.5,0.6), _eq(-0.6,-0.8,0.5), _eq(0,0,0.15)]),
+        _boneTrack(BONE.rForearm, [0, 0.2, 0.5, 0.75], [_eq(-0.3,0,0), _eq(-0.8,0,0), _eq(-1.0,0,0), _eq(-0.3,0,0)]),
+        _boneTrack(BONE.lForearm, [0, 0.2, 0.5, 0.75], [_eq(-0.3,0,0), _eq(-0.8,0,0), _eq(-1.0,0,0), _eq(-0.3,0,0)]),
+        _boneTrack(BONE.hips, [0, 0.15, 0.3, 0.5, 0.75], [_ID, _eq(-0.1,0,0), _eq(0,0.4,0), _eq(0,H*0.6,0), _eq(0,0.05,0)]),
+      ]);
+
+      return clips;
+    }
 
     // ===== STATE =====
     let gltfScene = null;
@@ -1426,8 +1625,15 @@
     function initializeFighterAnimationController(fighter) {
       fighter.combat = createFighterCombatState();
       fighter.animation = createFighterAnimationState(fighter);
+
+      // Register procedural bone-driven clips for all states
+      const procClips = generateProceduralClips();
+      for (const [name, clip] of Object.entries(procClips)) {
+        registerFighterClip(fighter, clip);
+      }
       remapAnimationStates(fighter);
 
+      // Also load any external Mixamo clips if configured (overrides procedural)
       const manifest = getManifestForCharacter(fighter.char.id);
       for (const [state, url] of Object.entries(manifest)) {
         if (!url) continue;
@@ -2202,21 +2408,33 @@
 
     // Build a group from either individual GLB or legacy monolithic scene meshes.
     // Returns a THREE.Group scaled to `targetHeight` with feet at Y=0.
+    // For rigged models: uses SkeletonUtils.clone() to preserve SkinnedMesh + Skeleton.
     function cloneCharacterModel(charId, targetHeight = 1.6) {
-      const group = new THREE.Group();
+      let group;
 
       if (characterGLBScenes[charId]) {
-        // --- Individual GLB: already origin-centered, feet at Y=0 ---
         const src = characterGLBScenes[charId];
-        src.traverse(child => {
-          if (child.isMesh) {
-            const cloned = child.clone(true);
-            cloned.geometry = child.geometry.clone();
-            group.add(cloned);
-          }
-        });
+        // Check if source has SkinnedMesh (rigged model)
+        let hasRig = false;
+        src.traverse(c => { if (c.isSkinnedMesh) hasRig = true; });
+
+        if (hasRig) {
+          // SkeletonUtils.clone preserves bones, skin, and bind matrices
+          group = SkeletonUtils.clone(src);
+        } else {
+          // Static mesh fallback
+          group = new THREE.Group();
+          src.traverse(child => {
+            if (child.isMesh) {
+              const cloned = child.clone(true);
+              cloned.geometry = child.geometry.clone();
+              group.add(cloned);
+            }
+          });
+        }
       } else if (characterGroups[charId]?.length > 0) {
-        // --- Legacy fallback: bake world transforms from monolithic GLTF ---
+        // Legacy fallback: bake world transforms from monolithic GLTF
+        group = new THREE.Group();
         for (const mesh of characterGroups[charId]) {
           const cloned = mesh.clone(true);
           cloned.geometry = mesh.geometry.clone();
@@ -2227,22 +2445,28 @@
           group.add(cloned);
         }
       } else {
-        return group; // empty — character not loaded
+        return new THREE.Group(); // empty — character not loaded
       }
 
       // Normalize: scale to target height, center X/Z, feet at Y=0
+      group.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(group);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
+      if (maxDim < 0.001) return group;
       const scale = targetHeight / maxDim;
+
+      // Wrap in outer group so skeleton root transforms stay intact
+      const wrapper = new THREE.Group();
+      wrapper.add(group);
       group.scale.setScalar(scale);
       group.position.set(
         -center.x * scale,
         -box.min.y * scale,
         -center.z * scale
       );
-      return group;
+      return wrapper;
     }
 
     function showCharacterInPreview(charId) {
