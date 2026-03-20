@@ -2868,6 +2868,31 @@
         return new THREE.Group(); // empty — character not loaded
       }
 
+      // Merge weapon meshes into the same group — they share the same
+      // model-space coordinate system so positions align automatically.
+      const weaponSrc = weaponMeshes[charId];
+      if (weaponSrc) {
+        weaponSrc.traverse(child => {
+          if (child.isMesh) {
+            const wClone = child.clone(true);
+            wClone.geometry = child.geometry.clone();
+            // Bake the weapon mesh's original world transform so it
+            // sits correctly when added as a direct child of group.
+            child.updateWorldMatrix(true, false);
+            wClone.applyMatrix4(child.matrixWorld);
+            wClone.castShadow = true;
+            wClone.receiveShadow = true;
+            group.add(wClone);
+          }
+        });
+      }
+
+      // Disable frustum culling on skinned meshes — animated bones can
+      // move vertices outside the original bounding sphere.
+      group.traverse(child => {
+        if (child.isSkinnedMesh) child.frustumCulled = false;
+      });
+
       // Normalize: scale to target height, center X/Z, feet at Y=0
       group.updateMatrixWorld(true);
       const box = getRenderableBounds(group);
