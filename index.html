@@ -630,18 +630,18 @@
     // ===== WEAPON DATA =====
     // Maps each character to weapon type, mesh identifiers, grip bone, and offset
     const WEAPON_DATA = {
-      Model001: { type: 'sword',       meshHints: ['caopi-R-weapon'],                       gripBone: 'bone_9', weapon_glb: './characters/weapons/Model001_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model001: { type: 'sword',       meshHints: ['caopi-R-weapon'],                       gripBone: 'bone_9', weapon_glb: './characters/Model001_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
       Model002: { type: 'staff',        meshHints: [],                                       gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model003: { type: 'axe',          meshHints: ['DW-weapon'],                            gripBone: 'bone_9', weapon_glb: './characters/weapons/Model003_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model004: { type: 'fan',          meshHints: ['DC-weapon'],                            gripBone: 'bone_9', weapon_glb: './characters/weapons/Model004_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model005: { type: 'mace',         meshHints: ['dongzhuo-weapon'],                      gripBone: 'bone_9', weapon_glb: './characters/weapons/Model005_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model006: { type: 'staff',        meshHints: [],                                       gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model003: { type: 'axe',          meshHints: ['DW-weapon'],                            gripBone: 'bone_9', weapon_glb: './characters/Model003_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model004: { type: 'fan',          meshHints: ['DC-weapon'],                            gripBone: 'bone_9', weapon_glb: './characters/Model004_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model005: { type: 'mace',         meshHints: ['dongzhuo-weapon'],                      gripBone: 'bone_9', weapon_glb: './characters/Model005_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model006: { type: 'staff',        meshHints: [],                                       gripBone: 'bone_9', weapon_glb: './characters/Model006_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
       Model007: { type: 'unarmed',      meshHints: [],                                       gripBone: null, weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model008: { type: 'crossbow',     meshHints: ['yingwu-wing'],                          gripBone: 'bone_9', weapon_glb: './characters/weapons/Model008_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model008: { type: 'crossbow',     meshHints: ['yingwu-wing'],                          gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
       Model009: { type: 'dual_blade',   meshHints: [],                                       gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model010: { type: 'dual_sword',   meshHints: ['liubei-m-weapon', 'liubei-weapon'],     gripBone: 'bone_9', weapon_glb: './characters/weapons/Model010_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model010: { type: 'dual_sword',   meshHints: ['liubei-m-weapon', 'liubei-weapon'],     gripBone: 'bone_9', weapon_glb: './characters/Model010_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
       Model011: { type: 'spear',        meshHints: [],                                       gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model012: { type: 'sword',        meshHints: ['LM-sword'],                             gripBone: 'bone_9', weapon_glb: './characters/weapons/Model012_weapon.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model012: { type: 'sword',        meshHints: ['LM-sword'],                             gripBone: 'bone_9', weapon_glb: './characters/Model012_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
     };
 
     // ===== WEAPON ATTACK MAPPING =====
@@ -2714,8 +2714,29 @@
       });
     }
 
+    // Load weapon GLBs into weaponMeshes cache
+    async function loadAllWeapons() {
+      const weaponLoader = new GLTFLoader();
+      const promises = [];
+      for (const [charId, wd] of Object.entries(WEAPON_DATA)) {
+        if (!wd.weapon_glb) continue;
+        promises.push(new Promise(resolve => {
+          weaponLoader.load(wd.weapon_glb, (gltf) => {
+            weaponMeshes[charId] = gltf.scene;
+            console.log(`[weapon] Loaded ${charId} weapon from ${wd.weapon_glb}`);
+            resolve(true);
+          }, undefined, (err) => {
+            console.warn(`[weapon] Failed to load ${wd.weapon_glb}:`, err);
+            resolve(false);
+          });
+        }));
+      }
+      await Promise.all(promises);
+    }
+
     // Kick off loading
     loadAllCharacters();
+    loadAllWeapons();
 
     // ===== PREVIEW RENDERER =====
     function initPreviewRenderer() {
