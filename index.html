@@ -803,14 +803,13 @@
         .sort((a, b) => b.desc - a.desc)
         .map(e => e.bone);
       let rLegStart = null, lLegStart = null;
-      for (const k of legPool) {
-        if (k.position.x > 0 && !rLegStart) rLegStart = k;
-        else if (k.position.x <= 0 && !lLegStart) lLegStart = k;
-      }
-      // If detection by X failed, try by Y (going downward)
-      if (!rLegStart && !lLegStart && legPool.length >= 2) {
+      if (legPool.length >= 2) {
+        // Sort by X descending — most-positive-X = right leg, most-negative = left
+        const byX = [...legPool].sort((a, b) => b.position.x - a.position.x);
+        rLegStart = byX[0];
+        lLegStart = byX[1];
+      } else if (legPool.length === 1) {
         rLegStart = legPool[0];
-        lLegStart = legPool[1];
       }
 
       function mapLeg(start, prefix) {
