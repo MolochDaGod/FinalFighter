@@ -1885,8 +1885,8 @@
     }
 
     function getFighterFacingDir(fighter) {
-      const y = fighter.group.rotation.y % (Math.PI * 2);
-      return (y < Math.PI / 2 || y > Math.PI * 1.5) ? 1 : -1;
+      // Side-view: -PI/2 = facing right (+X) = 1, PI/2 = facing left (-X) = -1
+      return fighter.group.rotation.y < 0 ? 1 : -1;
     }
 
     function createFighterCombatState() {
@@ -2248,8 +2248,7 @@
       const atk = def?.hitbox;
       if (!atk) return null;
       const b = attacker.bounds;
-      const facingRight = attacker.group.rotation.y < Math.PI / 2;
-      const dir = facingRight ? 1 : -1;
+      const dir = getFighterFacingDir(attacker);
       // Hitbox starts at body edge, extends forward
       const edgeX = attacker.x + dir * b.hw;
       const farX = edgeX + dir * atk.fwd;
@@ -2544,8 +2543,7 @@
     _projGeo.shockwave.rotateX(-Math.PI / 2);
 
     function spawnProjectile(attacker, def, attackState) {
-      const facingRight = attacker.group.rotation.y < Math.PI / 2;
-      const dir = facingRight ? 1 : -1;
+      const dir = getFighterFacingDir(attacker);
       const spawnX = attacker.x + dir * (attacker.bounds.hw + 0.15);
       const spawnY = attacker.bounds.hh; // mid-body height
 
@@ -2563,7 +2561,7 @@
       mesh.scale.setScalar(projSize);
       mesh.position.set(spawnX, spawnY, 0.05);
       if (projType === 'wave') {
-        mesh.rotation.z = facingRight ? -0.2 : Math.PI + 0.2;
+        mesh.rotation.z = dir > 0 ? -0.2 : Math.PI + 0.2;
       } else if (projType === 'beam') {
         mesh.scale.set(projSize * 3, projSize, 1);
       }
@@ -3157,7 +3155,7 @@
       });
       weaponGroup.position.set(wd.offset.x, wd.offset.y, wd.offset.z);
       weaponGroup.rotation.set(wd.rotation.x, wd.rotation.y, wd.rotation.z);
-      handB.add(weaponGroup);
+      handBone.add(weaponGroup);
       fighter.weaponGroup = weaponGroup;
     }
 
@@ -3334,7 +3332,10 @@
       // computed by buildFighterGroup that puts feet on the ground.
       p1Group.position.x = -1.8;
       p2Group.position.x = 1.8;
-      p2Group.rotation.y = Math.PI;
+      // Side-view: characters face along X axis, not Z.
+      // -PI/2 = face right (+X), PI/2 = face left (-X)
+      p1Group.rotation.y = -Math.PI / 2;  // P1 faces right
+      p2Group.rotation.y = Math.PI / 2;   // P2 faces left
 
       battleScene.add(p1Group);
       battleScene.add(p2Group);
@@ -3459,7 +3460,7 @@
       if (def.ranged) {
         spawnProjectile(attacker, def, attackState);
         playSound(SFX.PROJECTILE);
-        const facingRight = attacker.group.rotation.y < Math.PI / 2;
+        const facingRight = getFighterFacingDir(attacker) > 0;
         spawnSlashVFX(attacker.x + (facingRight ? 0.3 : -0.3), attacker.bounds.hh, facingRight, def.projColor || 0xeeb72b);
         spawnImpactSparks(attacker.x, attacker.bounds.hh, 4, def.projColor || 0xeeb72b);
         triggerScreenShake(def.category === 'special' ? 0.12 : 0.05);
@@ -3647,8 +3648,8 @@
         ai.group.position.x = ai.x;
       }
 
-      // Face player
-      ai.group.rotation.y = player.x < ai.x ? 0 : Math.PI;
+      // Face player along X axis (side-view)
+      ai.group.rotation.y = player.x < ai.x ? Math.PI / 2 : -Math.PI / 2;
 
       // --- Interval-based attack (jady-deth Deth.jsx:121 pattern) ---
       aiAttackTimer += dt;
@@ -3794,8 +3795,8 @@
         }
         p1.group.position.x = p1.x;
 
-        // Face opponent
-        p1.group.rotation.y = gameState.p2.x > p1.x ? 0 : Math.PI;
+        // Face opponent along X axis (side-view)
+        p1.group.rotation.y = gameState.p2.x > p1.x ? -Math.PI / 2 : Math.PI / 2;
 
         // Gamepad attack buttons (checked once per frame after pollGamepad)
         if (gpActionDown('punch')) processComboInput(p1, 'light');
