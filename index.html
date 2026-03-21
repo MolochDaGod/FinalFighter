@@ -625,6 +625,7 @@
       { id: 'Model010', name: 'Liu Bei', class: 'Warlord', icon: 'LB', atk: 7, def: 7, spd: 7, meshPrefix: 'Model010', glb: './characters/Model010_rigged.glb', color: '#44aa44' },
       { id: 'Model011', name: 'Lu Bu', class: 'God of War', icon: 'LU', atk: 10, def: 7, spd: 7, meshPrefix: 'Model011', glb: './characters/Model011_rigged.glb', color: '#cc2222' },
       { id: 'Model012', name: 'Lu Meng', class: 'Blade Master', icon: 'LM', atk: 8, def: 6, spd: 7, meshPrefix: 'Model012', glb: './characters/Model012_rigged.glb', color: '#2266bb' },
+      { id: 'Model013', name: 'King Leonidas', class: 'Gladiator', icon: 'KL', atk: 9, def: 8, spd: 6, meshPrefix: 'Model013', glb: './characters/Model013_rigged.glb', color: '#cc8844' },
     ];
 
     // ===== WEAPON DATA =====
@@ -642,6 +643,7 @@
       Model010: { type: 'dual_sword',   meshHints: ['liubei-m-weapon', 'liubei-weapon'],     gripBone: 'bone_9', weapon_glb: './characters/Model010_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
       Model011: { type: 'spear',        meshHints: [],                                       gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
       Model012: { type: 'sword',        meshHints: ['LM-sword'],                             gripBone: 'bone_9', weapon_glb: './characters/Model012_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model013: { type: 'unarmed',      meshHints: [],                                       gripBone: null, weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
     };
 
     // ===== WEAPON ATTACK MAPPING =====
@@ -1869,8 +1871,27 @@
         },
       },
       perCharacter: {
-        // Per-character overrides go here as you rig individual models.
-        // Example: Model001: { intro: './anims/CaoPi/intro.glb' },
+        Model013: {
+          idle: './anims/Leonidas/idle.glb',
+          walk_fwd: './anims/Leonidas/walk_fwd.glb',
+          run_fwd: './anims/Leonidas/run_fwd.glb',
+          attack_1: './anims/Leonidas/attack_1.glb',
+          attack_2: './anims/Leonidas/attack_2.glb',
+          attack_3: './anims/Leonidas/attack_3.glb',
+          attack_4: './anims/Leonidas/attack_4.glb',
+          attack_5: './anims/Leonidas/attack_5.glb',
+          attack_6: './anims/Leonidas/attack_6.glb',
+          attack_7: './anims/Leonidas/attack_7.glb',
+          block: './anims/Leonidas/block.glb',
+          parry: './anims/Leonidas/parry.glb',
+          block_stun: './anims/Leonidas/block_stun.glb',
+          dodge: './anims/Leonidas/dodge.glb',
+          hit_react: './anims/Leonidas/hit_react.glb',
+          knockdown: './anims/Leonidas/knockdown.glb',
+          ko: './anims/Leonidas/ko.glb',
+          victory: './anims/Leonidas/victory.glb',
+          taunt: './anims/Leonidas/taunt.glb',
+        },
       },
     };
 
