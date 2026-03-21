@@ -11,21 +11,7 @@ characters/weapons/
 tools/mixamo_exports/
 tools/mixamo_rigged/
 
-# Animation GLBs (downloaded from Mixamo — too large for git)
-anims/shared/*.glb
-anims/weapon_*/*.glb
-anims/CaoPi/*.glb
-anims/CaoZijian/*.glb
-anims/DianWei/*.glb
-anims/DiaoChan/*.glb
-anims/DongZhuo/*.glb
-anims/GuoJia/*.glb
-anims/HuangGai/*.glb
-anims/HuangYueying/*.glb
-anims/XuKui/*.glb
-anims/LiuBei/*.glb
-anims/LuBu/*.glb
-anims/LuMeng/*.glb
+# Animation GLBs — tracked (12 MB total, needed for combat animations)
 
 # Dependencies
 node_modules/
