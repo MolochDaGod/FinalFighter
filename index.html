@@ -1906,8 +1906,8 @@
     }
 
     function getFighterFacingDir(fighter) {
-      // Side-view: -PI/2 = facing right (+X) = 1, PI/2 = facing left (-X) = -1
-      return fighter.group.rotation.y < 0 ? 1 : -1;
+      // Side-view: PI/2 = facing right (+X) = 1, -PI/2 = facing left (-X) = -1
+      return fighter.group.rotation.y > 0 ? 1 : -1;
     }
 
     function createFighterCombatState() {
@@ -3353,10 +3353,10 @@
       // computed by buildFighterGroup that puts feet on the ground.
       p1Group.position.x = -1.8;
       p2Group.position.x = 1.8;
-      // Side-view: characters face along X axis, not Z.
-      // -PI/2 = face right (+X), PI/2 = face left (-X)
-      p1Group.rotation.y = -Math.PI / 2;  // P1 faces right
-      p2Group.rotation.y = Math.PI / 2;   // P2 faces left
+      // Side-view: characters face along X axis.
+      // Models face +Z by default, so PI/2 = face right, -PI/2 = face left
+      p1Group.rotation.y = Math.PI / 2;   // P1 faces right
+      p2Group.rotation.y = -Math.PI / 2;  // P2 faces left
 
       battleScene.add(p1Group);
       battleScene.add(p2Group);
@@ -3670,7 +3670,7 @@
       }
 
       // Face player along X axis (side-view)
-      ai.group.rotation.y = player.x < ai.x ? Math.PI / 2 : -Math.PI / 2;
+      ai.group.rotation.y = player.x < ai.x ? -Math.PI / 2 : Math.PI / 2;
 
       // --- Interval-based attack (jady-deth Deth.jsx:121 pattern) ---
       aiAttackTimer += dt;
@@ -3817,7 +3817,7 @@
         p1.group.position.x = p1.x;
 
         // Face opponent along X axis (side-view)
-        p1.group.rotation.y = gameState.p2.x > p1.x ? -Math.PI / 2 : Math.PI / 2;
+        p1.group.rotation.y = gameState.p2.x > p1.x ? Math.PI / 2 : -Math.PI / 2;
 
         // Gamepad attack buttons (checked once per frame after pollGamepad)
         if (gpActionDown('punch')) processComboInput(p1, 'light');
