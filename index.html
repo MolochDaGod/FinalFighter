@@ -3052,6 +3052,7 @@
       previewRenderer.setSize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight);
       previewRenderer.toneMapping = THREE.ACESFilmicToneMapping;
       previewRenderer.toneMappingExposure = 1.2;
+      previewRenderer.outputColorSpace = THREE.SRGBColorSpace;
 
       previewScene = new THREE.Scene();
       previewScene.background = new THREE.Color(0x0e111b);
@@ -3105,9 +3106,11 @@
 
     function animatePreview(timestamp) {
       animFrame = requestAnimationFrame(animatePreview);
+      const dt = previewLastFrame ? (timestamp - previewLastFrame) / 1000 : 0.016;
       previewLastFrame = timestamp;
 
-      // Real Mixamo/rigged animations will drive the preview once clips are loaded
+      // Update preview animation mixer (idle animation)
+      if (previewMixer) previewMixer.update(dt);
 
       if (previewControls) previewControls.update();
       if (previewRenderer && previewScene && previewCamera) {
@@ -3116,16 +3119,27 @@
     }
 
     // Compute bounds from renderable meshes only (ignore bones/helpers).
-    // Some rigs contain far-away helper bones (e.g. neutral_bone), which inflate
-    // full hierarchy bounds and make characters scale down to near-invisible.
+    // For SkinnedMesh: compute from geometry position attribute directly,
+    // transformed by the node's world matrix. Box3.setFromObject on SkinnedMesh
+    // uses bind-pose bounds which can be wildly wrong for rigged models.
     function getRenderableBounds(root) {
       const bounds = new THREE.Box3();
       bounds.makeEmpty();
       root.updateMatrixWorld(true);
+      const _v = new THREE.Vector3();
       root.traverse((child) => {
-        if (child.isMesh || child.isSkinnedMesh) {
-          const b = new THREE.Box3().setFromObject(child);
-          if (!b.isEmpty()) bounds.union(b);
+        if (!child.isMesh && !child.isSkinnedMesh) return;
+        const geo = child.geometry;
+        if (!geo) return;
+        const pos = geo.attributes.position;
+        if (!pos) return;
+        // For SkinnedMesh: use the geometry positions transformed by the
+        // node's world matrix. This gives the bind-pose bounds in world
+        // space without the skeleton distortion that setFromObject applies.
+        const mat = child.matrixWorld;
+        for (let i = 0; i < pos.count; i++) {
+          _v.fromBufferAttribute(pos, i).applyMatrix4(mat);
+          bounds.expandByPoint(_v);
         }
       });
       if (bounds.isEmpty()) return new THREE.Box3().setFromObject(root);
@@ -3201,13 +3215,20 @@
       return wrapper;
     }
 
+    // Clean up previous preview mixer to prevent memory leaks
+    let previewMixer = null;
+
     function showCharacterInPreview(charId) {
       if (!previewScene) return;
 
-      // Remove old preview
+      // Remove old preview + stop old mixer
       if (previewChar) {
         previewScene.remove(previewChar);
         previewChar = null;
+      }
+      if (previewMixer) {
+        previewMixer.stopAllAction();
+        previewMixer = null;
       }
 
       if (!characterGLBScenes[charId] && (!characterGroups[charId] || characterGroups[charId].length === 0)) return;
@@ -3215,12 +3236,32 @@
       const char = CHARACTERS.find(c => c.id === charId);
       const group = cloneCharacterModel(charId, 1.6);
 
-      // Face the camera (looking toward +Z)
-      group.rotation.y = 0;
+      // Face the camera — models face +Z in GLTF, camera is at +Z,
+      // so rotate 180° to show the front of the character
+      group.rotation.y = Math.PI;
       group.userData.baseY = group.position.y;
 
       previewScene.add(group);
       previewChar = group;
+
+      // --- Load and play idle animation in preview ---
+      const manifest = getManifestForCharacter(charId);
+      const idleUrl = manifest?.idle;
+      if (idleUrl) {
+        previewMixer = new THREE.AnimationMixer(group);
+        const loader = new GLTFLoader();
+        loader.load(idleUrl, (gltf) => {
+          if (!previewChar || previewChar !== group) return; // stale
+          if (gltf.animations?.length > 0) {
+            const clip = gltf.animations[0];
+            const action = previewMixer.clipAction(clip);
+            action.setLoop(THREE.LoopRepeat, Infinity);
+            action.play();
+          }
+        }, undefined, () => {
+          // Idle animation not found — character stays in bind pose
+        });
+      }
 
       previewLastFrame = 0;
 
