@@ -623,7 +623,9 @@
     //   './'                                              — local / same-origin (default)
     //   'https://objects.grudge-studio.com/finalfighter/'  — Grudge object storage
     //   'https://cdn.example.com/finalfighter/'            — any CDN
-    const ASSET_BASE_URL = 'https://objects.grudge-studio.com/finalfighter/';
+    // Toggle this to your object storage URL after running: node tools/upload_to_storage.js
+    // const ASSET_BASE_URL = 'https://objects.grudge-studio.com/finalfighter/';
+    const ASSET_BASE_URL = './';
 
     // Helper: resolve an asset path against the base URL
     function assetURL(relativePath) {
