@@ -616,38 +616,59 @@
     // Initialize Rapier WASM before anything else
     await RAPIER.init();
 
+    // ===== ASSET BASE URL =====
+    // Point this at your object storage to serve models from CDN instead of the repo.
+    // For local dev, use './' (relative). For production, use your storage URL.
+    // Examples:
+    //   './'                                              — local / same-origin (default)
+    //   'https://objects.grudge-studio.com/finalfighter/'  — Grudge object storage
+    //   'https://cdn.example.com/finalfighter/'            — any CDN
+    // Toggle this to your object storage URL after running: node tools/upload_to_storage.js
+    // const ASSET_BASE_URL = 'https://objects.grudge-studio.com/finalfighter/';
+    const ASSET_BASE_URL = './';
+
+    // Helper: resolve an asset path against the base URL
+    function assetURL(relativePath) {
+      if (!relativePath) return null;
+      // If already absolute, return as-is
+      if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) return relativePath;
+      // Strip leading './' from relative paths
+      const clean = relativePath.replace(/^\.\/?/, '');
+      return ASSET_BASE_URL + clean;
+    }
+
     // ===== CHARACTER DATA =====
     const CHARACTERS = [
-      { id: 'Model001', name: 'Cao Pi', class: 'Swordsman', icon: 'CP', atk: 7, def: 6, spd: 8, meshPrefix: 'Model001', glb: './characters/Model001_rigged.glb', color: '#cc3333' },
-      { id: 'Model002', name: 'Cao Zijian', class: 'Strategist', icon: 'CZ', atk: 5, def: 7, spd: 7, meshPrefix: 'Model002', glb: './characters/Model002_rigged.glb', color: '#8855cc' },
-      { id: 'Model003', name: 'Dian Wei', class: 'Berserker', icon: 'DW', atk: 10, def: 8, spd: 4, meshPrefix: 'Model003', glb: './characters/Model003_rigged.glb', color: '#dd6633' },
-      { id: 'Model004', name: 'Diao Chan', class: 'Enchantress', icon: 'DC', atk: 6, def: 5, spd: 9, meshPrefix: 'Model004', glb: './characters/Model004_rigged.glb', color: '#dd55aa' },
-      { id: 'Model005', name: 'Dong Zhuo', class: 'Tyrant', icon: 'DZ', atk: 9, def: 9, spd: 3, meshPrefix: 'Model005', glb: './characters/Model005_rigged.glb', color: '#884422' },
-      { id: 'Model006', name: 'Guo Jia', class: 'Tactician', icon: 'GJ', atk: 6, def: 6, spd: 8, meshPrefix: 'Model006', glb: './characters/Model006_rigged.glb', color: '#3388cc' },
-      { id: 'Model007', name: 'Huang Gai', class: 'Vanguard', icon: 'HG', atk: 8, def: 8, spd: 5, meshPrefix: 'Model007', glb: './characters/Model007_rigged.glb', color: '#cc8833' },
-      { id: 'Model008', name: 'Huang Yueying', class: 'Inventor', icon: 'HY', atk: 7, def: 5, spd: 8, meshPrefix: 'Model008', glb: './characters/Model008_rigged.glb', color: '#44bb88' },
-      { id: 'Model009', name: 'Xu Kui', class: 'Shadow Blade', icon: 'XK', atk: 8, def: 5, spd: 9, meshPrefix: 'Model009', glb: './characters/Model009_rigged.glb', color: '#6644aa' },
-      { id: 'Model010', name: 'Liu Bei', class: 'Warlord', icon: 'LB', atk: 7, def: 7, spd: 7, meshPrefix: 'Model010', glb: './characters/Model010_rigged.glb', color: '#44aa44' },
-      { id: 'Model011', name: 'Lu Bu', class: 'God of War', icon: 'LU', atk: 10, def: 7, spd: 7, meshPrefix: 'Model011', glb: './characters/Model011_rigged.glb', color: '#cc2222' },
-      { id: 'Model012', name: 'Lu Meng', class: 'Blade Master', icon: 'LM', atk: 8, def: 6, spd: 7, meshPrefix: 'Model012', glb: './characters/Model012_rigged.glb', color: '#2266bb' },
-      { id: 'Model013', name: 'King Leonidas', class: 'Gladiator', icon: 'KL', atk: 9, def: 8, spd: 6, meshPrefix: 'Model013', glb: './characters/Model013_rigged.glb', color: '#cc8844' },
+      { id: 'Model001', name: 'Cao Pi', class: 'Swordsman', icon: 'CP', atk: 7, def: 6, spd: 8, meshPrefix: 'Model001', glb: assetURL('characters/Model001_rigged.glb'), color: '#cc3333' },
+      { id: 'Model002', name: 'Cao Zijian', class: 'Strategist', icon: 'CZ', atk: 5, def: 7, spd: 7, meshPrefix: 'Model002', glb: assetURL('characters/Model002_rigged.glb'), color: '#8855cc' },
+      { id: 'Model003', name: 'Dian Wei', class: 'Berserker', icon: 'DW', atk: 10, def: 8, spd: 4, meshPrefix: 'Model003', glb: assetURL('characters/Model003_rigged.glb'), color: '#dd6633' },
+      { id: 'Model004', name: 'Diao Chan', class: 'Enchantress', icon: 'DC', atk: 6, def: 5, spd: 9, meshPrefix: 'Model004', glb: assetURL('characters/Model004_rigged.glb'), color: '#dd55aa' },
+      { id: 'Model005', name: 'Dong Zhuo', class: 'Tyrant', icon: 'DZ', atk: 9, def: 9, spd: 3, meshPrefix: 'Model005', glb: assetURL('characters/Model005_rigged.glb'), color: '#884422' },
+      { id: 'Model006', name: 'Guo Jia', class: 'Tactician', icon: 'GJ', atk: 6, def: 6, spd: 8, meshPrefix: 'Model006', glb: assetURL('characters/Model006_rigged.glb'), color: '#3388cc' },
+      { id: 'Model007', name: 'Huang Gai', class: 'Vanguard', icon: 'HG', atk: 8, def: 8, spd: 5, meshPrefix: 'Model007', glb: assetURL('characters/Model007_rigged.glb'), color: '#cc8833' },
+      { id: 'Model008', name: 'Huang Yueying', class: 'Inventor', icon: 'HY', atk: 7, def: 5, spd: 8, meshPrefix: 'Model008', glb: assetURL('characters/Model008_rigged.glb'), color: '#44bb88' },
+      { id: 'Model009', name: 'Xu Kui', class: 'Shadow Blade', icon: 'XK', atk: 8, def: 5, spd: 9, meshPrefix: 'Model009', glb: assetURL('characters/Model009_rigged.glb'), color: '#6644aa' },
+      { id: 'Model010', name: 'Liu Bei', class: 'Warlord', icon: 'LB', atk: 7, def: 7, spd: 7, meshPrefix: 'Model010', glb: assetURL('characters/Model010_rigged.glb'), color: '#44aa44' },
+      { id: 'Model011', name: 'Lu Bu', class: 'God of War', icon: 'LU', atk: 10, def: 7, spd: 7, meshPrefix: 'Model011', glb: assetURL('characters/Model011_rigged.glb'), color: '#cc2222' },
+      { id: 'Model012', name: 'Lu Meng', class: 'Blade Master', icon: 'LM', atk: 8, def: 6, spd: 7, meshPrefix: 'Model012', glb: assetURL('characters/Model012_rigged.glb'), color: '#2266bb' },
+      { id: 'Model013', name: 'King Leonidas', class: 'Gladiator', icon: 'KL', atk: 9, def: 8, spd: 6, meshPrefix: 'Model013', glb: assetURL('characters/Model013_rigged.glb'), color: '#cc8844' },
     ];
 
     // ===== WEAPON DATA =====
     // Maps each character to weapon type, mesh identifiers, grip bone, and offset
     const WEAPON_DATA = {
-      Model001: { type: 'sword',       meshHints: ['caopi-R-weapon'],                       gripBone: 'bone_9', weapon_glb: './characters/Model001_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model001: { type: 'sword',       meshHints: ['caopi-R-weapon'],                       gripBone: 'bone_9', weapon_glb: assetURL('characters/Model001_weapons.glb'), offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
       Model002: { type: 'staff',        meshHints: [],                                       gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model003: { type: 'axe',          meshHints: ['DW-weapon'],                            gripBone: 'bone_9', weapon_glb: './characters/Model003_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model004: { type: 'fan',          meshHints: ['DC-weapon'],                            gripBone: 'bone_9', weapon_glb: './characters/Model004_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model005: { type: 'mace',         meshHints: ['dongzhuo-weapon'],                      gripBone: 'bone_9', weapon_glb: './characters/Model005_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model006: { type: 'staff',        meshHints: [],                                       gripBone: 'bone_9', weapon_glb: './characters/Model006_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model003: { type: 'axe',          meshHints: ['DW-weapon'],                            gripBone: 'bone_9', weapon_glb: assetURL('characters/Model003_weapons.glb'), offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model004: { type: 'fan',          meshHints: ['DC-weapon'],                            gripBone: 'bone_9', weapon_glb: assetURL('characters/Model004_weapons.glb'), offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model005: { type: 'mace',         meshHints: ['dongzhuo-weapon'],                      gripBone: 'bone_9', weapon_glb: assetURL('characters/Model005_weapons.glb'), offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model006: { type: 'staff',        meshHints: [],                                       gripBone: 'bone_9', weapon_glb: assetURL('characters/Model006_weapons.glb'), offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
       Model007: { type: 'unarmed',      meshHints: [],                                       gripBone: null, weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
       Model008: { type: 'crossbow',     meshHints: ['yingwu-wing'],                          gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
       Model009: { type: 'dual_blade',   meshHints: [],                                       gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model010: { type: 'dual_sword',   meshHints: ['liubei-m-weapon', 'liubei-weapon'],     gripBone: 'bone_9', weapon_glb: './characters/Model010_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model010: { type: 'dual_sword',   meshHints: ['liubei-m-weapon', 'liubei-weapon'],     gripBone: 'bone_9', weapon_glb: assetURL('characters/Model010_weapons.glb'), offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
       Model011: { type: 'spear',        meshHints: [],                                       gripBone: 'bone_9', weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
-      Model012: { type: 'sword',        meshHints: ['LM-sword'],                             gripBone: 'bone_9', weapon_glb: './characters/Model012_weapons.glb', offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      Model012: { type: 'sword',        meshHints: ['LM-sword'],                             gripBone: 'bone_9', weapon_glb: assetURL('characters/Model012_weapons.glb'), offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
       Model013: { type: 'unarmed',      meshHints: [],                                       gripBone: null, weapon_glb: null, offset: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
     };
 
@@ -2048,11 +2069,16 @@
 
     function getManifestForCharacter(charId) {
       const weaponType = WEAPON_DATA[charId]?.type || 'unarmed';
-      return {
+      const merged = {
         ...(MIXAMO_CLIP_MANIFEST.shared || {}),
         ...((MIXAMO_CLIP_MANIFEST.weaponType || {})[weaponType] || {}),
         ...((MIXAMO_CLIP_MANIFEST.perCharacter || {})[charId] || {}),
       };
+      // Resolve all animation paths through assetURL for object storage support
+      for (const key of Object.keys(merged)) {
+        if (merged[key]) merged[key] = assetURL(merged[key]);
+      }
+      return merged;
     }
 
     function createFighterAnimationState(fighter) {
@@ -2914,6 +2940,48 @@
     const loadingBar = document.getElementById('loading-bar');
     const loadingText = document.getElementById('loading-text');
 
+    // Configure GLTFLoader for cross-origin when using object storage
+    if (ASSET_BASE_URL.startsWith('http')) {
+      loader.setCrossOrigin('anonymous');
+    }
+
+    // Load a single character GLB with retry support
+    function loadCharacterGLB(character, retries = 2) {
+      return new Promise((resolve) => {
+        let attempt = 0;
+        function tryLoad() {
+          loader.load(character.glb,
+            (gltf) => {
+              characterGLBScenes[character.id] = gltf.scene;
+              // Auto-detect bone map from skeleton
+              const boneMap = detectBoneMap(gltf.scene);
+              if (boneMap) {
+                characterBoneMaps[character.id] = boneMap;
+                console.log(`[bones] ${character.name} (${character.id}):`, JSON.stringify(boneMap));
+              }
+              // Also store any embedded animations
+              if (gltf.animations && gltf.animations.length > 0) {
+                characterGLBScenes[character.id]._animations = gltf.animations;
+              }
+              resolve(true);
+            },
+            undefined,
+            (err) => {
+              attempt++;
+              if (attempt <= retries) {
+                console.warn(`[load] Retry ${attempt}/${retries} for ${character.name} (${character.glb})`);
+                setTimeout(tryLoad, 500 * attempt);
+              } else {
+                console.error(`[load] Failed to load ${character.name} after ${retries + 1} attempts:`, character.glb, err?.message || err);
+                resolve(false);
+              }
+            }
+          );
+        }
+        tryLoad();
+      });
+    }
+
     // Try to load individual character GLBs first (pre-split, origin-centered).
     // Falls back to the monolithic scene.gltf if characters/ directory is unavailable.
     async function loadAllCharacters() {
@@ -2922,38 +2990,24 @@
       const hasGLBs = CHARACTERS[0].glb;
 
       if (hasGLBs) {
-        // Parallel-load individual GLBs
-        const promises = CHARACTERS.map(c => new Promise((resolve) => {
-          loader.load(c.glb,
-            (gltf) => {
-              characterGLBScenes[c.id] = gltf.scene;
-              // Auto-detect bone map from skeleton
-              const boneMap = detectBoneMap(gltf.scene);
-              if (boneMap) {
-                characterBoneMaps[c.id] = boneMap;
-                console.log(`[bones] ${c.name} (${c.id}):`, JSON.stringify(boneMap));
-              }
-              // Also store any embedded animations
-              if (gltf.animations && gltf.animations.length > 0) {
-                characterGLBScenes[c.id]._animations = gltf.animations;
-              }
-              loaded++;
-              const pct = (loaded / total * 100).toFixed(0);
-              loadingBar.style.width = pct + '%';
-              loadingText.textContent = `Loading ${c.name}... (${loaded}/${total})`;
-              resolve(true);
-            },
-            undefined,
-            () => {
-              console.warn(`GLB not found: ${c.glb}, will fall back to scene.gltf`);
-              loaded++;
-              resolve(false);
-            }
-          );
-        }));
+        // Parallel-load individual GLBs with retry
+        const promises = CHARACTERS.map(c => {
+          return loadCharacterGLB(c).then(ok => {
+            loaded++;
+            const pct = (loaded / total * 100).toFixed(0);
+            loadingBar.style.width = pct + '%';
+            loadingText.textContent = `Loading ${c.name}... (${loaded}/${total})`;
+            return ok;
+          });
+        });
 
-      const results = await Promise.all(promises);
+        const results = await Promise.all(promises);
         const glbCount = results.filter(Boolean).length;
+        const failedChars = CHARACTERS.filter((c, i) => !results[i]).map(c => c.name);
+
+        if (failedChars.length > 0) {
+          console.warn(`[load] Failed characters: ${failedChars.join(', ')}`);
+        }
 
         // If at least some loaded, we're good
         if (glbCount > 0) {
@@ -2969,12 +3023,15 @@
           console.error('GLB loading failed: file:// protocol blocks fetch(). Run a local HTTP server.');
           return;
         }
+        if (ASSET_BASE_URL.startsWith('http')) {
+          console.error(`[load] All GLBs failed from object storage (${ASSET_BASE_URL}). Check CORS headers and that files exist.`);
+        }
         console.warn(`All ${total} character GLBs failed to load — falling back to scene.gltf`);
       }
 
       // Fallback: load monolithic scene.gltf
       loadingText.textContent = 'Loading warriors...';
-      loader.load('./scene.gltf',
+      loader.load(assetURL('scene.gltf'),
         (gltf) => {
           gltfScene = gltf.scene;
           loadingBar.style.width = '100%';
@@ -2991,7 +3048,7 @@
         },
         (error) => {
           loadingText.textContent = 'Error loading scene: ' + error.message;
-          console.error(error);
+          console.error('[load] scene.gltf failed:', error);
         }
       );
     }
@@ -3048,11 +3105,13 @@
     function initPreviewRenderer() {
       const canvas = document.getElementById('preview-canvas');
       previewRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-      previewRenderer.setPixelRatio(window.devicePixelRatio);
+      previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       previewRenderer.setSize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight);
       previewRenderer.toneMapping = THREE.ACESFilmicToneMapping;
       previewRenderer.toneMappingExposure = 1.2;
       previewRenderer.outputColorSpace = THREE.SRGBColorSpace;
+      previewRenderer.shadowMap.enabled = true;
+      previewRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
       previewScene = new THREE.Scene();
       previewScene.background = new THREE.Color(0x0e111b);
@@ -3073,6 +3132,13 @@
       previewScene.add(ambient);
       const dirLight = new THREE.DirectionalLight(0xeeb72b, 1.5);
       dirLight.position.set(3, 5, 3);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.set(1024, 1024);
+      dirLight.shadow.camera.left = -2;
+      dirLight.shadow.camera.right = 2;
+      dirLight.shadow.camera.top = 2;
+      dirLight.shadow.camera.bottom = -1;
+      dirLight.shadow.bias = -0.001;
       previewScene.add(dirLight);
       const fillLight = new THREE.DirectionalLight(0x3080ff, 0.5);
       fillLight.position.set(-3, 3, -2);
@@ -3089,6 +3155,7 @@
       const ground = new THREE.Mesh(groundGeo, groundMat);
       ground.rotation.x = -Math.PI / 2;
       ground.position.y = -0.01;
+      ground.receiveShadow = true;
       previewScene.add(ground);
 
       // Gold ring
@@ -3111,6 +3178,11 @@
 
       // Update preview animation mixer (idle animation)
       if (previewMixer) previewMixer.update(dt);
+
+      // Auto-rotate the preview character for a better 3D showcase
+      if (previewChar) {
+        previewChar.rotation.y += 0.4 * dt;
+      }
 
       if (previewControls) previewControls.update();
       if (previewRenderer && previewScene && previewCamera) {
@@ -3190,8 +3262,26 @@
 
       // Disable frustum culling on skinned meshes — animated bones can
       // move vertices outside the original bounding sphere.
+      // Also fix texture colorSpace on cloned materials to prevent washed-out
+      // or over-bright rendering when switching between renderers.
       group.traverse(child => {
         if (child.isSkinnedMesh) child.frustumCulled = false;
+        if (child.isMesh || child.isSkinnedMesh) {
+          const mat = child.material;
+          if (mat) {
+            // Ensure base color map uses SRGB color space
+            if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
+            // Emissive maps are also in SRGB
+            if (mat.emissiveMap) mat.emissiveMap.colorSpace = THREE.SRGBColorSpace;
+            // Normal maps must be Linear
+            if (mat.normalMap) mat.normalMap.colorSpace = THREE.LinearSRGBColorSpace;
+            // AO/roughness/metalness are data textures (Linear)
+            if (mat.aoMap) mat.aoMap.colorSpace = THREE.LinearSRGBColorSpace;
+            if (mat.roughnessMap) mat.roughnessMap.colorSpace = THREE.LinearSRGBColorSpace;
+            if (mat.metalnessMap) mat.metalnessMap.colorSpace = THREE.LinearSRGBColorSpace;
+            mat.needsUpdate = true;
+          }
+        }
       });
 
       // Normalize: scale to target height, center X/Z, feet at Y=0
@@ -3235,6 +3325,14 @@
 
       const char = CHARACTERS.find(c => c.id === charId);
       const group = cloneCharacterModel(charId, 1.6);
+
+      // Enable shadow casting on preview character meshes
+      group.traverse(child => {
+        if (child.isMesh || child.isSkinnedMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
 
       // Face the camera — models face +Z in GLTF, camera is at +Z,
       // so rotate 180° to show the front of the character

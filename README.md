@@ -59,8 +59,11 @@ A 3D fighting game built with **Three.js** — no build tools, just a single HTM
 - Single `index.html` — no build system required
 - Three.js v0.164.1 via CDN importmap
 - Individual GLB models per character (with monolithic scene.gltf fallback)
+- Configurable `ASSET_BASE_URL` for serving models from object storage / CDN
 - Geometry-baked world transforms (fixes Sketchfab/FBX hierarchy issues)
 - Mixamo animation system ready (AnimationMixer, clip manifest, state aliases)
+- Proper SRGB color space handling and ACES tone mapping
+- Rapier physics engine for collision and knockback
 - Proper `requestAnimationFrame` delta timing
 - Responsive canvas resizing
 - Deployed on Vercel
@@ -148,15 +151,40 @@ Open `http://localhost:8000` (or the port shown).
 
 > **Note:** Opening `index.html` directly (`file://`) won't work due to CORS restrictions on GLTF loading.
 
+### Object Storage (Production)
+For production, game assets (354 files, ~354 MB) are served from **Grudge Studio object storage** instead of the Git repo:
+
+1. Set environment variables:
+   ```bash
+   set GRUDGE_STORAGE_URL=https://objects.grudge-studio.com
+   set GRUDGE_STORAGE_KEY=your-token-here
+   ```
+2. Upload all assets:
+   ```bash
+   node tools/upload_to_storage.js
+   ```
+3. Verify with dry run first:
+   ```bash
+   node tools/upload_to_storage.js --dry-run
+   ```
+
+The `ASSET_BASE_URL` in `index.html` controls where models are loaded from:
+- `'./'` — local / same-origin (development)
+- `'https://objects.grudge-studio.com/finalfighter/'` — Grudge object storage (production)
+
+Ensure CORS headers on the storage bucket allow your deployment domain.
+
 ---
 
 ## Architecture
 
 ### Model Loading Pipeline
-1. `loadAllCharacters()` parallel-loads individual GLBs from `characters/` directory
-2. Falls back to monolithic `scene.gltf` if GLBs unavailable
-3. `cloneCharacterModel(charId, targetHeight)` deep-clones and normalizes any character
-4. Geometry baking via `applyMatrix4()` fixes Sketchfab/FBX hierarchy transforms (axis swap + 0.01 scale)
+1. `loadAllCharacters()` parallel-loads individual GLBs via `ASSET_BASE_URL`
+2. Each load has 2 retry attempts with exponential backoff
+3. Falls back to monolithic `scene.gltf` if all GLBs fail
+4. `cloneCharacterModel(charId, targetHeight)` deep-clones and normalizes any character
+5. Texture color spaces are auto-corrected (SRGB for color maps, Linear for data maps)
+6. Geometry baking via `applyMatrix4()` fixes Sketchfab/FBX hierarchy transforms
 
 ### Combat State Machine
 - 11 states with defined transitions and lockout rules
@@ -196,6 +224,9 @@ The animation system is built and ready. To add skeletal animations:
 - [x] Individual GLB character loading
 - [x] Mixamo animation system (code ready)
 - [x] Vercel deployment
+- [x] Object storage support (Grudge Studio CDN)
+- [x] SRGB color space + shadow maps + ACES tone mapping
+- [x] Rapier physics engine
 - [ ] Skeletal animations via Mixamo rigging
 - [ ] 2.5D side-view camera (MK/Virtua Fighter style)
 - [ ] Per-character special moves with unique hitbox shapes
