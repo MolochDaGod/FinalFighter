@@ -623,7 +623,7 @@
     //   './'                                              — local / same-origin (default)
     //   'https://objects.grudge-studio.com/finalfighter/'  — Grudge object storage
     //   'https://cdn.example.com/finalfighter/'            — any CDN
-    const ASSET_BASE_URL = './';
+    const ASSET_BASE_URL = 'https://objects.grudge-studio.com/finalfighter/';
 
     // Helper: resolve an asset path against the base URL
     function assetURL(relativePath) {
@@ -3323,6 +3323,14 @@
 
       const char = CHARACTERS.find(c => c.id === charId);
       const group = cloneCharacterModel(charId, 1.6);
+
+      // Enable shadow casting on preview character meshes
+      group.traverse(child => {
+        if (child.isMesh || child.isSkinnedMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
 
       // Face the camera — models face +Z in GLTF, camera is at +Z,
       // so rotate 180° to show the front of the character
