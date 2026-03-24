@@ -600,7 +600,8 @@
   {
     "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/",
+      "@dimforge/rapier3d-compat": "https://cdn.jsdelivr.net/npm/@dimforge/rapier3d-compat@0.14.0/rapier.es.js"
     }
   }
   </script>
@@ -610,6 +611,10 @@
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+    import RAPIER from '@dimforge/rapier3d-compat';
+
+    // Initialize Rapier WASM before anything else
+    await RAPIER.init();
 
     // ===== CHARACTER DATA =====
     const CHARACTERS = [
@@ -1435,7 +1440,126 @@
 
     loadBindings();
 
-    // ===== COLLIDER SYSTEM (Three.js Box3) =====
+    // ===== RAPIER PHYSICS =====
+    let physicsWorld = null;
+    const ARENA_HALF_WIDTH = 3.8;
+    const KNOCKBACK_FORCE = 12;  // multiplied by attack knockback value
+    const LAUNCH_FORCE = 3.0;    // upward force on knockdown attacks
+
+    // Per-character physics profiles derived from stats
+    function getPhysicsProfile(char) {
+      const mass = 40 + char.def * 8;        // heavy = harder to knock (120-152 kg)
+      const linearDamping = 3.0 + (10 - char.spd) * 0.4; // slow chars decelerate faster
+      const moveForce = 2.0 + char.spd * 0.3; // fast chars move quicker
+      const knockbackResist = char.def * 0.03; // 0-30% reduction
+      const dashForce = 4.0 + char.spd * 0.2;
+      return { mass, linearDamping, moveForce, knockbackResist, dashForce };
+    }
+
+    function initBattlePhysics() {
+      const gravity = new RAPIER.Vector3(0.0, -19.62, 0.0); // 2x gravity for snappy fighting
+      physicsWorld = new RAPIER.World(gravity);
+
+      // Floor
+      const floorBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(0, -0.1, 0));
+      physicsWorld.createCollider(RAPIER.ColliderDesc.cuboid(10, 0.1, 5), floorBody);
+
+      // Left wall
+      const lwBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(-ARENA_HALF_WIDTH - 0.1, 2, 0));
+      physicsWorld.createCollider(RAPIER.ColliderDesc.cuboid(0.1, 4, 5).setRestitution(0.3), lwBody);
+
+      // Right wall
+      const rwBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(ARENA_HALF_WIDTH + 0.1, 2, 0));
+      physicsWorld.createCollider(RAPIER.ColliderDesc.cuboid(0.1, 4, 5).setRestitution(0.3), rwBody);
+    }
+
+    function createFighterRigidBody(fighter) {
+      const profile = getPhysicsProfile(fighter.char);
+      fighter.physicsProfile = profile;
+      const b = fighter.bounds;
+      const hh = b.hh || 0.8;
+      const hw = Math.max(b.hw || 0.25, 0.15);
+
+      const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
+        .setTranslation(fighter.x, hh, 0)
+        .setLinearDamping(profile.linearDamping)
+        .setAngularDamping(100) // prevent spinning
+        .lockRotations();       // fighters always upright
+      const rigidBody = physicsWorld.createRigidBody(bodyDesc);
+
+      // Capsule collider (half-height + radius)
+      const capsuleHH = Math.max(hh - hw, 0.2);
+      const colliderDesc = RAPIER.ColliderDesc.capsule(capsuleHH, hw)
+        .setMass(profile.mass)
+        .setRestitution(0.1)
+        .setFriction(0.8);
+      physicsWorld.createCollider(colliderDesc, rigidBody);
+
+      fighter.rigidBody = rigidBody;
+      return rigidBody;
+    }
+
+    function applyPhysicsKnockback(attacker, defender, knockback, knocksDown) {
+      if (!defender.rigidBody) return;
+      const resist = defender.physicsProfile?.knockbackResist || 0;
+      const force = knockback * KNOCKBACK_FORCE * (1 - resist);
+      const dir = defender.x > attacker.x ? 1 : -1;
+      const launchY = knocksDown ? LAUNCH_FORCE : (knockback > 0.2 ? 1.0 : 0);
+      defender.rigidBody.applyImpulse({ x: dir * force, y: launchY, z: 0 }, true);
+    }
+
+    function syncFighterFromPhysics(fighter) {
+      if (!fighter.rigidBody) return;
+      const pos = fighter.rigidBody.translation();
+      fighter.x = pos.x;
+      // Y position: only apply if above ground (airborne from knockback/jump)
+      const groundY = fighter.baseY || 0;
+      fighter.group.position.x = pos.x;
+      fighter.group.position.y = Math.max(groundY, pos.y - (fighter.bounds?.hh || 0.8));
+      // Lock Z in physics (2.5D constraint)
+      const vel = fighter.rigidBody.linvel();
+      if (Math.abs(vel.z) > 0.1) {
+        fighter.rigidBody.setLinvel({ x: vel.x, y: vel.y, z: 0 }, true);
+      }
+      // Snap Z position
+      if (Math.abs(pos.z) > 0.01 && !fighter.sidestepping) {
+        fighter.rigidBody.setTranslation({ x: pos.x, y: pos.y, z: 0 }, true);
+      }
+    }
+
+    function setPhysicsMovement(fighter, moveIntent) {
+      if (!fighter.rigidBody) return;
+      const profile = fighter.physicsProfile;
+      if (!profile) return;
+      const vel = fighter.rigidBody.linvel();
+      const targetVx = moveIntent * profile.moveForce;
+      // Smooth velocity blending for weighted feel
+      const newVx = vel.x + (targetVx - vel.x) * 0.3;
+      fighter.rigidBody.setLinvel({ x: newVx, y: vel.y, z: vel.z }, true);
+    }
+
+    function applyPhysicsDodge(fighter) {
+      if (!fighter.rigidBody) return;
+      const profile = fighter.physicsProfile;
+      const vel = fighter.rigidBody.linvel();
+      // Sidestep into Z axis
+      fighter.rigidBody.setLinvel({ x: vel.x * 0.3, y: vel.y, z: -(profile?.dashForce || 5) }, true);
+      // Schedule return
+      setTimeout(() => {
+        if (!fighter.rigidBody) return;
+        const v = fighter.rigidBody.linvel();
+        fighter.rigidBody.setLinvel({ x: v.x, y: v.y, z: (profile?.dashForce || 5) * 0.8 }, true);
+      }, 400);
+    }
+
+    function cleanupBattlePhysics() {
+      if (physicsWorld) {
+        physicsWorld.free();
+        physicsWorld = null;
+      }
+    }
+
+    // ===== COLLIDER SYSTEM (Three.js Box3 — hitbox/hurtbox detection) =====
 
     const FIGHTER_STATES = Object.freeze({
       IDLE: 'idle',
@@ -2283,26 +2407,21 @@
     }
 
     // Push two fighters apart if their body colliders overlap.
+    // With Rapier physics, rigid bodies handle most collision naturally.
+    // This is a soft correction for edge cases where physics alone isn't enough.
     function resolveBodyCollision(p1, p2) {
       const box1 = getBodyCollider(p1);
       const box2 = getBodyCollider(p2);
       if (!box1.intersectsBox(box2)) return;
-      // Compute overlap on X axis
       const overlapLeft = box1.max.x - box2.min.x;
       const overlapRight = box2.max.x - box1.min.x;
       const pushDist = Math.min(overlapLeft, overlapRight) / 2 + 0.01;
-      if (p1.x < p2.x) {
-        p1.x -= pushDist;
-        p2.x += pushDist;
-      } else {
-        p1.x += pushDist;
-        p2.x -= pushDist;
+      const dir = p1.x < p2.x ? -1 : 1;
+      // Apply as gentle impulse rather than teleport
+      if (p1.rigidBody && p2.rigidBody) {
+        p1.rigidBody.applyImpulse({ x: dir * pushDist * 8, y: 0, z: 0 }, true);
+        p2.rigidBody.applyImpulse({ x: -dir * pushDist * 8, y: 0, z: 0 }, true);
       }
-      // Clamp to arena bounds
-      p1.x = Math.max(-3.5, Math.min(3.5, p1.x));
-      p2.x = Math.max(-3.5, Math.min(3.5, p2.x));
-      p1.group.position.x = p1.x;
-      p2.group.position.x = p2.x;
     }
 
     // ===== SOUND MANAGER (Web Audio API — oscillator placeholders) =====
@@ -2675,11 +2794,9 @@
       showDamage(dmg, isP1Target);
       showCombo(isP1Target ? 'p2' : 'p1', proj.owner.combo);
 
-      // Knockback
+      // Knockback: Rapier impulse from projectile impact
       if (!defender.blocking) {
-        const dir = defender.x > proj.owner.x ? proj.knockback : -proj.knockback;
-        defender.x = Math.max(-3.5, Math.min(3.5, defender.x + dir));
-        defender.group.position.x = defender.x;
+        applyPhysicsKnockback(proj.owner, defender, proj.knockback, proj.knocksDown);
       }
 
       updateHealthBars();
@@ -3459,7 +3576,8 @@
       if (fighter.cooldown > 0 || fighter.stunned > 0) return false;
       setFighterState(fighter, FIGHTER_STATES.DODGE, { force: true });
       fighter.sidestepping = true;
-      fighter.cooldown = 600; // dodge cooldown (jady-deth: 1s, we use 0.6s for faster pace)
+      fighter.cooldown = 600;
+      applyPhysicsDodge(fighter);
       playSound(SFX.DODGE);
       return true;
     }
@@ -3592,11 +3710,9 @@
       showDamage(finalDmg, isP1Target);
       showCombo(isP1Target ? 'p2' : 'p1', attacker.combo);
 
-      // Knockback from attack def
+      // Knockback: use Rapier impulse for natural physics-driven movement
       if (!defender.blocking) {
-        const dir = defender.x > attacker.x ? def.knockback : -def.knockback;
-        defender.x = Math.max(-3.5, Math.min(3.5, defender.x + dir));
-        defender.group.position.x = defender.x;
+        applyPhysicsKnockback(attacker, defender, def.knockback, def.knocksDown);
       }
 
       updateHealthBars();
@@ -3660,13 +3776,14 @@
         const moveSpeed = 1.5 * (ai.char.spd / 10);
         if (dist > 1.2) {
           aiMoveIntent = player.x > ai.x ? 1 : -1;
-          ai.x += aiMoveIntent * moveSpeed * dt / 1000;
+          setPhysicsMovement(ai, aiMoveIntent * moveSpeed);
         } else if (dist < 0.6) {
           aiMoveIntent = player.x > ai.x ? -1 : 1;
-          ai.x += aiMoveIntent * moveSpeed * 0.5 * dt / 1000;
+          setPhysicsMovement(ai, aiMoveIntent * moveSpeed * 0.5);
+        } else if (ai.rigidBody) {
+          const v = ai.rigidBody.linvel();
+          ai.rigidBody.setLinvel({ x: v.x * 0.85, y: v.y, z: v.z }, true);
         }
-        ai.x = Math.max(-3.5, Math.min(3.5, ai.x));
-        ai.group.position.x = ai.x;
       }
 
       // Face player along X axis (side-view)
@@ -3811,10 +3928,12 @@
           || p1.combat?.state === FIGHTER_STATES.PARRY
           || p1.combat?.state === FIGHTER_STATES.BLOCK_STUN;
         if (!p1Locked && p1MoveIntent !== 0) {
-          p1.x += p1MoveIntent * moveSpeed * dt / 1000;
-          p1.x = Math.max(-3.5, Math.min(3.5, p1.x));
+          setPhysicsMovement(p1, p1MoveIntent * moveSpeed);
+        } else if (!p1Locked && p1.rigidBody) {
+          // Decelerate when no input
+          const v = p1.rigidBody.linvel();
+          p1.rigidBody.setLinvel({ x: v.x * 0.85, y: v.y, z: v.z }, true);
         }
-        p1.group.position.x = p1.x;
 
         // Face opponent along X axis (side-view)
         p1.group.rotation.y = gameState.p2.x > p1.x ? Math.PI / 2 : -Math.PI / 2;
@@ -3856,13 +3975,47 @@
 
       // Always update animations + VFX + shake (even when paused — KO / victory still animate)
       if (gameState) {
-        // --- Dodge Z-axis lerp (jady-deth damp pattern) ---
-        const dampFactor = 1 - Math.pow(0.05, dt / 200); // exponential damp ~0.75 smoothing
+        // --- Rapier physics step ---
+        if (physicsWorld && !gameState.paused) {
+          physicsWorld.step();
+          syncFighterFromPhysics(gameState.p1);
+          syncFighterFromPhysics(gameState.p2);
+        }
+
+        // --- Dodge: clear sidestepping flag when dodge state ends ---
         for (const f of [gameState.p1, gameState.p2]) {
-          const targetZ = f.sidestepping ? -0.8 : 0;
-          f.group.position.z += (targetZ - f.group.position.z) * dampFactor;
-          // Clear sidestepping flag when dodge state ends
           if (f.combat?.state !== FIGHTER_STATES.DODGE) f.sidestepping = false;
+        }
+
+        // --- Animation momentum: scale playback speed by horizontal velocity ---
+        for (const f of [gameState.p1, gameState.p2]) {
+          if (f.animation?.currentAction && f.rigidBody) {
+            const vx = Math.abs(f.rigidBody.linvel().x);
+            const state = f.combat?.state;
+            if (state === FIGHTER_STATES.WALK_FWD || state === FIGHTER_STATES.WALK_BACK ||
+                state === FIGHTER_STATES.RUN_FWD || state === FIGHTER_STATES.RUN_BACK) {
+              f.animation.currentAction.timeScale = 0.6 + Math.min(vx / 3, 1.4);
+            } else if (!isAttackState(state)) {
+              f.animation.currentAction.timeScale = 1.0;
+            }
+          }
+          // Landing squash/stretch: detect landing from airborne
+          if (f.rigidBody) {
+            const vy = f.rigidBody.linvel().y;
+            const onGround = f.group.position.y < 0.05;
+            if (f._wasAirborne && onGround && vy > -0.5) {
+              // Squash on landing
+              f.group.scale.set(1.06, 0.92, 1.06);
+              f._landingTimer = 120;
+            }
+            f._wasAirborne = !onGround && vy < -0.5;
+            if (f._landingTimer > 0) {
+              f._landingTimer -= dt;
+              const t = Math.max(0, f._landingTimer / 120);
+              f.group.scale.lerp(new THREE.Vector3(1, 1, 1), 1 - t);
+              if (f._landingTimer <= 0) f.group.scale.set(1, 1, 1);
+            }
+          }
         }
 
         // Animation mixers
@@ -3949,6 +4102,9 @@
       battleActive = false;
       if (gameState) gameState.paused = true;
       clearProjectiles();
+      cleanupBattlePhysics();
+      if (gameState?.p1) gameState.p1.rigidBody = null;
+      if (gameState?.p2) gameState.p2.rigidBody = null;
       window.showCharSelect();
     };
 
@@ -3958,6 +4114,10 @@
       document.getElementById('battle-arena').classList.add('active');
 
       initBattle();
+      initBattlePhysics();
+      // Create rigid bodies for both fighters after initBattle sets up gameState
+      if (gameState?.p1) createFighterRigidBody(gameState.p1);
+      if (gameState?.p2) createFighterRigidBody(gameState.p2);
       battleLoop();
 
       await showRoundStart();
